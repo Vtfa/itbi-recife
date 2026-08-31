@@ -32,7 +32,7 @@ def main():
     df.to_sql('transacoes', conn, index=False, if_exists='replace')
     
     cursor = conn.cursor()
-    print("Criando índices para busca ultrarrápida...")
+    print("Criando índices...")
     cursor.execute("CREATE INDEX idx_endereco_edificio ON transacoes(endereco_edificio);")
     cursor.execute("CREATE INDEX idx_bairro ON transacoes(bairro_padronizado);")
     cursor.execute("CREATE INDEX idx_logradouro ON transacoes(logradouro_fmt);")

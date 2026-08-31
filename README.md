@@ -1,60 +1,51 @@
-# Workspace: ITBI Recife Analytics (2015 - 2026)
+# ITBI Recife (2015 – 2026)
 
-Workspace completo e avançado para consulta, análise e visualização das **151.848 transações imobiliárias** do ITBI da Prefeitura do Recife.
-
----
-
-## 🚀 Como Iniciar o Painel Interativo
-
-Basta dar um duplo clique em:
-- **`iniciar_dashboard.bat`** (ou executar `python iniciar_dashboard.py`)
-
-Isso abrirá automaticamente no seu navegador o **Explorador Interativo de Transações** (`http://localhost:8050`).
+Painel analítico e base de dados processada para consulta e análise das transações imobiliárias registradas no ITBI pela Prefeitura do Recife.
 
 ---
 
-## 🌟 Recursos do Painel
+## Execução
 
-1. **Mapa Interativo com Polígonos de Bairros (GeoJSON):**
-   - Visualize os 93 bairros e os 16.484 edifícios do Recife.
-   - Marcadores coloridos por faixa de preço de m² privativo.
-2. **Busca Inteligente por Endereço ou Edifício:**
-   - Digite qualquer rua, avenida ou condomínio (ex: *Le Parc, Boa Viagem, Agamenon, Conselheiro Aguiar*).
-3. **Histórico Detalhado Transação por Transação:**
-   - Ao selecionar qualquer prédio, o painel lista **cada apartamento/sala vendido**:
-     - **Unidade / Complemento** (ex: *Apto 1402 Edf Maria Julia*)
-     - **Data da Transação** (de 2015 a 2026)
-     - **Valor Corrigido pelo IPCA** vs. **Valor Nominal** da época
-     - **Metragem Privativa Estimada** ($m^2$) vs. **Área Total Cadastral**
-     - **Preço por $m^2$ Privativo Real**
-     - **Padrão de Acabamento** e **Conservação**
-4. **Gráfico de Evolução Temporal:**
-   - Gráfico de linha mostrando a trajetória do preço/m² das unidades vendidas naquele edifício ao longo dos anos.
-5. **Exportação de Dados:**
-   - Botão para exportar o histórico daquele edifício diretamente para CSV / Excel.
+Para iniciar o servidor local:
+
+```bash
+python scripts/app_servidor.py
+```
+
+Ou no Windows:
+- Executar `iniciar_dashboard.bat` (ou `python iniciar_dashboard.py`).
+
+O painel estará disponível em `http://localhost:8050`.
 
 ---
 
-## 📁 Estrutura de Arquivos
+## Funcionalidades
+
+- **Visualização Geoespacial:** Mapa interativo com delimitação dos bairros (GeoJSON) e localização dos edifícios.
+- **Busca por Endereço:** Autocomplete por logradouro, condomínio e bairro.
+- **Histórico por Unidade:** Detalhamento de transações com valor nominal, valor corrigido pelo IPCA e preço por m² privativo estimado.
+- **Identificação de Revendas:** Rastreamento de imóveis com mais de uma venda registrada ao longo do período analisado.
+- **Séries Temporais:** Gráficos de evolução histórica de preços por edifício e bairro.
+- **Exportação:** Exportação dos dados filtrados para CSV.
+
+---
+
+## Estrutura do Repositório
 
 ```text
-ITBI_Recife/
-├── iniciar_dashboard.bat          # Atalho para iniciar com 2 cliques
-├── iniciar_dashboard.py           # Script iniciador
-├── dashboard_interativo.html      # Interface web do painel
+├── dashboard_interativo.html        # Interface web (Leaflet, Tailwind, Chart.js)
+├── iniciar_dashboard.py             # Script de inicialização local
 ├── data/
 │   ├── raw/
-│   │   ├── itbi_2015.csv ... 2026.csv   # 12 CSVs originais
-│   │   └── bairros_recife.geojson       # Polígonos oficiais dos bairros
+│   │   ├── itbi_2015.csv ...        # Dados brutos anuais
+│   │   └── bairros_recife.geojson   # Malha vetorial dos bairros
 │   └── processed/
-│       ├── itbi_recife.db               # Banco SQLite indexado
-│       ├── itbi_consolidado_corrigido.csv # Base com 151.848 transações
-│       ├── imoveis_por_endereco_detalhado.csv # Todas as transações com endereços
-│       ├── resumo_por_edificio_logradouro.csv # Resumo por condomínio
-│       └── preco_m2_privativo_por_bairro.csv  # Ranking por bairro
+│       ├── itbi_recife.db           # Banco SQLite indexado
+│       └── itbi_consolidado_corrigido.csv
 └── scripts/
-    ├── app_servidor.py            # Servidor HTTP / API REST
-    ├── criar_banco_sqlite.py      # Importador SQLite
-    ├── corrigir_area_e_inflacao.py# Correção IPCA + Área Privativa
-    └── process_itbi.py            # Downloader inicial
+    ├── app_servidor.py              # Servidor HTTP e API REST
+    ├── criar_banco_sqlite.py        # Importação e indexação SQLite
+    ├── corrigir_area_e_inflacao.py  # Correção pelo IPCA e cálculo de m²
+    ├── padronizar_logradouros.py    # Padronização de nomes de vias
+    └── processar_revendas.py        # Identificação de revendas
 ```
