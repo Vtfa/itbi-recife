@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ITBI Recife Analytics - Explorador de Imóveis e Transações</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .revenda-border { border-left: 3px solid #8b5cf6 !important; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 flex flex-col h-screen overflow-hidden">
+
+    <!-- Top Header -->
+    <header class="bg-slate-900 text-white px-6 py-3 flex items-center justify-between shadow-md z-30 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="bg-blue-600 p-2 rounded-lg text-white">
+                <i class="fa-solid fa-building text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight">ITBI Recife • Explorador de Transações</h1>
+                <p class="text-xs text-slate-400">151.848 transações reais com rastreamento de <b>28.260 re-vendas</b></p>
+            </div>
+        </div>
+
+        <!-- Search & Filter Controls -->
+        <div class="flex items-center space-x-3 w-1/2 max-w-2xl">
+            <div class="relative flex-1">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
+                <input id="searchInput" type="text" placeholder="Buscar por rua, avenida ou condomínio..." 
+                       class="w-full bg-slate-800 text-white placeholder-slate-400 text-sm pl-9 pr-4 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 transition shadow-inner">
+                <div id="searchDropdown" class="absolute top-11 left-0 w-full bg-white text-slate-800 rounded-lg shadow-xl border border-slate-200 hidden max-h-80 overflow-y-auto custom-scrollbar z-50"></div>
+            </div>
+            <select id="bairroSelect" class="bg-slate-800 text-white text-sm px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 transition">
+                <option value="">Todos os Bairros</option>
+            </select>
+
+            <!-- Layout Mode Toggles -->
+            <div class="flex bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
+                <button onclick="setLayout('map')" id="btnMapOnly" title="Ver apenas o Mapa" class="px-2.5 py-1 rounded text-slate-300 hover:text-white transition">
+                    <i class="fa-solid fa-map"></i>
+                </button>
+                <button onclick="setLayout('split')" id="btnSplit" title="Divisão 50/50" class="px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition">
+                    <i class="fa-solid fa-table-columns"></i>
+                </button>
+                <button onclick="setLayout('table')" id="btnTableOnly" title="Ver apenas Tabela" class="px-2.5 py-1 rounded text-slate-300 hover:text-white transition">
+                    <i class="fa-solid fa-table-list"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Layout -->
+    <div class="flex-1 flex overflow-hidden" id="mainContainer">
+        
+        <!-- Left: Map Container -->
+        <div id="mapCol" class="w-1/2 h-full relative border-r border-slate-200 transition-all duration-200">
+            <div id="map" class="w-full h-full"></div>
+            
+            <!-- Map Legend -->
+            <div class="absolute bottom-4 left-4 bg-white/95 backdrop-blur px-4 py-3 rounded-lg shadow-lg border border-slate-200 text-xs z-[1000] space-y-1.5 pointer-events-auto">
+                <div class="font-bold text-slate-700 mb-1">Preço / m² Privativo Real</div>
+                <div class="flex items-center space-x-2"><span class="w-3.5 h-3.5 rounded-full bg-[#ef4444] inline-block shadow-sm"></span> <span>> R$ 8.000 / m²</span></div>
+                <div class="flex items-center space-x-2"><span class="w-3.5 h-3.5 rounded-full bg-[#f59e0b] inline-block shadow-sm"></span> <span>R$ 6.500 – R$ 8.000</span></div>
+                <div class="flex items-center space-x-2"><span class="w-3.5 h-3.5 rounded-full bg-[#3b82f6] inline-block shadow-sm"></span> <span>R$ 5.000 – R$ 6.500</span></div>
+                <div class="flex items-center space-x-2"><span class="w-3.5 h-3.5 rounded-full bg-[#10b981] inline-block shadow-sm"></span> <span>< R$ 5.000 / m²</span></div>
+                <div class="pt-1.5 border-t border-slate-200 text-[11px] text-purple-700 font-semibold flex items-center space-x-1">
+                    <i class="fa-solid fa-rotate text-purple-600"></i>
+                    <span>Rastreamento de Re-vendas Ativo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Details & Transactions Panel -->
+        <div id="tableCol" class="w-1/2 h-full flex flex-col bg-white overflow-hidden transition-all duration-200">
+            
+            <!-- Default View: 3 Active Tabs (Edifícios, Re-vendas, Recentes) -->
+            <div id="defaultHighlightsView" class="flex-1 flex flex-col overflow-hidden">
+                
+                <!-- Quick Navigation Tabs -->
+                <div class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
+                    <div class="flex space-x-2">
+                        <button onclick="switchHighlightsTab('edificios')" id="tabBtnEdificios" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-sm transition">
+                            <i class="fa-solid fa-city mr-1"></i> Principais Edifícios
+                        </button>
+                        <button onclick="switchHighlightsTab('revendas')" id="tabBtnRevendas" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-100 text-purple-800 hover:bg-purple-200 transition">
+                            <i class="fa-solid fa-rotate mr-1"></i> Casos de Re-venda
+                        </button>
+                        <button onclick="switchHighlightsTab('recentes')" id="tabBtnRecentes" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700 transition">
+                            <i class="fa-solid fa-clock-rotate-left mr-1"></i> Últimas Vendas
+                        </button>
+                    </div>
+                    <span class="text-xs text-slate-500 font-medium" id="highlightsSubtitle">Clique em qualquer condomínio</span>
+                </div>
+
+                <!-- Tab 1: Top Edifícios Table -->
+                <div id="tabEdificios" class="flex-1 overflow-y-auto custom-scrollbar">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead class="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
+                            <tr>
+                                <th class="py-2.5 px-4 font-semibold">Endereço / Condomínio</th>
+                                <th class="py-2.5 px-3 font-semibold">Bairro</th>
+                                <th class="py-2.5 px-3 font-semibold text-center">Vendas</th>
+                                <th class="py-2.5 px-3 font-semibold text-center">Re-vendas</th>
+                                <th class="py-2.5 px-3 font-semibold">Preço / m² Priv.</th>
+                                <th class="py-2.5 px-3 font-semibold">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topEdificiosTbody" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- Loaded via API -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Tab 2: Repeated Sales Case Studies Table -->
+                <div id="tabRevendas" class="flex-1 overflow-y-auto custom-scrollbar hidden">
+                    <div class="p-3 bg-purple-50 border-b border-purple-100 text-xs text-purple-900 flex items-center justify-between">
+                        <div>
+                            <span class="font-bold">Comparações do Exato Mesmo Imóvel:</span> Transações onde a mesma unidade foi comprada e revendida ao longo do tempo.
+                        </div>
+                    </div>
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead class="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
+                            <tr>
+                                <th class="py-2.5 px-3 font-semibold">Imóvel / Endereço</th>
+                                <th class="py-2.5 px-3 font-semibold">1ª Venda (IPCA)</th>
+                                <th class="py-2.5 px-3 font-semibold">Re-venda (IPCA)</th>
+                                <th class="py-2.5 px-3 font-semibold text-center">Prazo</th>
+                                <th class="py-2.5 px-3 font-semibold">Valorização Real</th>
+                                <th class="py-2.5 px-3 font-semibold">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="revendasTbody" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- Loaded via API -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Tab 3: Recent Transactions Table -->
+                <div id="tabRecentes" class="flex-1 overflow-y-auto custom-scrollbar hidden">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead class="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
+                            <tr>
+                                <th class="py-2.5 px-4 font-semibold">Endereço / Unidade</th>
+                                <th class="py-2.5 px-3 font-semibold">Data</th>
+                                <th class="py-2.5 px-3 font-semibold">Valor Corrigido</th>
+                                <th class="py-2.5 px-3 font-semibold">Área Priv.</th>
+                                <th class="py-2.5 px-3 font-semibold">Preço / m²</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentesTbody" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- Loaded via API -->
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <!-- Single Building Detailed View (Loaded on click) -->
+            <div id="buildingView" class="flex-1 flex flex-col overflow-hidden hidden">
+                
+                <!-- Building Header & Summary -->
+                <div class="p-5 border-b border-slate-200 bg-slate-50/70 shrink-0">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="flex items-center space-x-2 mb-1">
+                                <button onclick="backToHighlights()" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-2.5 py-1 rounded-md transition flex items-center space-x-1.5 shadow-sm">
+                                    <i class="fa-solid fa-arrow-left"></i> <span>Voltar à Lista</span>
+                                </button>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800" id="bldgBairroBadge">
+                                    Bairro
+                                </span>
+                            </div>
+                            <h2 class="text-lg font-bold text-slate-900 leading-snug" id="bldgAddress">Nome do Endereço</h2>
+                        </div>
+                        <button onclick="exportTableToCSV()" class="text-xs bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold px-3 py-1.5 rounded-lg shadow-sm flex items-center space-x-1.5 transition">
+                            <i class="fa-solid fa-file-arrow-down text-emerald-600"></i>
+                            <span>Exportar CSV</span>
+                        </button>
+                    </div>
+
+                    <!-- Metrics Cards -->
+                    <div class="grid grid-cols-4 gap-3 mt-3">
+                        <div class="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Preço / m² Médio</div>
+                            <div class="text-base font-bold text-blue-600" id="bldgM2Medio">R$ 0</div>
+                        </div>
+                        <div class="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Valor Médio (IPCA)</div>
+                            <div class="text-base font-bold text-slate-800" id="bldgValorMedio">R$ 0</div>
+                        </div>
+                        <div class="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Área Priv. Média</div>
+                            <div class="text-base font-bold text-slate-800" id="bldgAreaMedia">0 m²</div>
+                        </div>
+                        <div class="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Total Vendas</div>
+                            <div class="text-base font-bold text-emerald-600" id="bldgTotalTransacoes">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clean History Chart Section -->
+                <div class="px-5 py-3 border-b border-slate-200 bg-white shrink-0">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                <i class="fa-solid fa-chart-line text-blue-600 mr-1"></i> Evolução de Preço / m²
+                            </span>
+                            <span class="text-[11px] text-slate-400">(Média Anual Consolidada)</span>
+                        </div>
+                        <!-- Chart Mode Buttons -->
+                        <div class="flex bg-slate-100 p-0.5 rounded-lg text-[11px]">
+                            <button onclick="setChartMode('bar')" id="chartBtnBar" class="px-2 py-0.5 rounded bg-white shadow-sm font-bold text-blue-600 transition">Barras Anuais</button>
+                            <button onclick="setChartMode('line')" id="chartBtnLine" class="px-2 py-0.5 rounded text-slate-500 hover:text-slate-800 transition">Linha de Tendência</button>
+                            <button onclick="setChartMode('scatter')" id="chartBtnScatter" class="px-2 py-0.5 rounded text-slate-500 hover:text-slate-800 transition">Vendas Individuais</button>
+                        </div>
+                    </div>
+                    
+                    <div class="h-36 w-full relative">
+                        <canvas id="bldgChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Transaction Table Header with Re-vendas Filter Toggle -->
+                <div class="px-5 py-2.5 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between shrink-0">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-xs font-bold text-slate-700 uppercase">Unidades Vendidas</span>
+                        <!-- Filter Checkbox for Repeated Sales -->
+                        <label class="inline-flex items-center space-x-1.5 text-xs text-purple-800 font-semibold bg-purple-100/80 px-2.5 py-0.5 rounded-md cursor-pointer hover:bg-purple-200 transition">
+                            <input type="checkbox" id="chkOnlyRevendas" onchange="toggleOnlyRevendasFilter()" class="rounded text-purple-600 focus:ring-purple-500">
+                            <span><i class="fa-solid fa-rotate text-purple-600"></i> Apenas Re-vendas</span>
+                        </label>
+                    </div>
+                    <span class="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200" id="tableCountBadge">0 transações</span>
+                </div>
+
+                <!-- Transactions Table (Scrollable) -->
+                <div class="flex-1 overflow-y-auto custom-scrollbar p-0">
+                    <table class="w-full text-left text-xs border-collapse" id="transactionsTable">
+                        <thead class="bg-slate-50 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
+                            <tr>
+                                <th class="py-2.5 px-3 font-semibold">Unidade / Apto</th>
+                                <th class="py-2.5 px-3 font-semibold">Data</th>
+                                <th class="py-2.5 px-3 font-semibold">Histórico de Re-venda</th>
+                                <th class="py-2.5 px-3 font-semibold">Valor Corrigido (IPCA)</th>
+                                <th class="py-2.5 px-3 font-semibold">Área Priv.</th>
+                                <th class="py-2.5 px-3 font-semibold">Preço / m² Priv.</th>
+                                <th class="py-2.5 px-3 font-semibold">Padrão</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionsTbody" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- Rows loaded dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        let map, markersLayer, geojsonLayer;
+        let chartInstance = null;
+        let currentTransactionsData = [];
+        let currentBuildingAddress = "";
+        let currentChartMode = 'bar';
+        let showOnlyRevendas = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            loadBairros();
+            loadMapPoints();
+            loadHighlights();
+            setupSearch();
+        });
+
+        function setLayout(mode) {
+            const mapCol = document.getElementById('mapCol');
+            const tableCol = document.getElementById('tableCol');
+            const btnMap = document.getElementById('btnMapOnly');
+            const btnSplit = document.getElementById('btnSplit');
+            const btnTable = document.getElementById('btnTableOnly');
+
+            [btnMap, btnSplit, btnTable].forEach(b => {
+                b.className = 'px-2.5 py-1 rounded text-slate-300 hover:text-white transition';
+            });
+
+            if (mode === 'map') {
+                mapCol.className = 'w-full h-full relative border-r border-slate-200 transition-all duration-200';
+                tableCol.className = 'hidden';
+                btnMap.className = 'px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition';
+            } else if (mode === 'table') {
+                mapCol.className = 'hidden';
+                tableCol.className = 'w-full h-full flex flex-col bg-white overflow-hidden transition-all duration-200';
+                btnTable.className = 'px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition';
+            } else {
+                mapCol.className = 'w-1/2 h-full relative border-r border-slate-200 transition-all duration-200';
+                tableCol.className = 'w-1/2 h-full flex flex-col bg-white overflow-hidden transition-all duration-200';
+                btnSplit.className = 'px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition';
+            }
+
+            setTimeout(() => { map.invalidateSize(); }, 250);
+        }
+
+        function initMap() {
+            map = L.map('map', { zoomControl: false }).setView([-8.0578, -34.8829], 12);
+            L.control.zoom({ position: 'topright' }).addTo(map);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=cb1_2n9t_1_2003e8cc97c46d8ede889365', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            markersLayer = L.markerClusterGroup({
+                chunkedLoading: true,
+                maxClusterRadius: 45,
+                spiderfyOnMaxZoom: true
+            });
+            map.addLayer(markersLayer);
+
+            fetch('/api/geojson')
+                .then(r => r.json())
+                .then(geoData => {
+                    geojsonLayer = L.geoJSON(geoData, {
+                        style: {
+                            color: '#3b82f6',
+                            weight: 1.2,
+                            opacity: 0.5,
+                            fillColor: '#93c5fd',
+                            fillOpacity: 0.08
+                        },
+                        onEachFeature: (feature, layer) => {
+                            const name = feature.properties.bairro || feature.properties.nome || feature.properties.E4_Descri || "Bairro";
+                            layer.bindTooltip(name, { sticky: true, className: 'text-xs font-semibold' });
+                            layer.on('click', () => {
+                                document.getElementById('bairroSelect').value = name;
+                                filterByBairro(name);
+                            });
+                        }
+                    }).addTo(map);
+                })
+                .catch(e => console.log('GeoJSON info:', e));
+        }
+
+        function loadBairros() {
+            fetch('/api/bairros')
+                .then(r => r.json())
+                .then(bairros => {
+                    const select = document.getElementById('bairroSelect');
+                    bairros.forEach(b => {
+                        const opt = document.createElement('option');
+                        opt.value = b.bairro;
+                        opt.textContent = `${b.bairro} (${b.total_transacoes.toLocaleString('pt-BR')} vendas • R$ ${b.m2_medio.toLocaleString('pt-BR')}/m²)`;
+                        select.appendChild(opt);
+                    });
+
+                    select.addEventListener('change', (e) => {
+                        filterByBairro(e.target.value);
+                    });
+                });
+        }
+
+        function loadHighlights(bairro = "") {
+            const url = bairro ? `/api/destaques?bairro=${encodeURIComponent(bairro)}` : '/api/destaques';
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    // 1. Top Edifícios
+                    const topTbody = document.getElementById('topEdificiosTbody');
+                    topTbody.innerHTML = '';
+                    (data.top_edificios || []).forEach(item => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-blue-50/60 cursor-pointer transition';
+                        tr.innerHTML = `
+                            <td class="py-2.5 px-4 font-bold text-slate-900">${item.endereco_edificio}</td>
+                            <td class="py-2.5 px-3 text-slate-500">${item.bairro_padronizado}</td>
+                            <td class="py-2.5 px-3 text-center font-bold text-blue-600">${item.total_transacoes}</td>
+                            <td class="py-2.5 px-3 text-center font-bold text-purple-600">${item.total_revendas || 0}</td>
+                            <td class="py-2.5 px-3 font-bold text-emerald-600">R$ ${(item.m2_privativo_medio || 0).toLocaleString('pt-BR')}</td>
+                            <td class="py-2.5 px-3">
+                                <button class="bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white px-2.5 py-1 rounded font-semibold transition">Ver Unidades</button>
+                            </td>
+                        `;
+                        tr.addEventListener('click', () => {
+                            selectBuilding(item.endereco_edificio);
+                            if (item.latitude && item.longitude) {
+                                map.setView([item.latitude, item.longitude], 17);
+                            }
+                        });
+                        topTbody.appendChild(tr);
+                    });
+
+                    // 2. Casos de Re-venda
+                    const revTbody = document.getElementById('revendasTbody');
+                    revTbody.innerHTML = '';
+                    (data.revendas_destaque || []).forEach(item => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-purple-50/60 cursor-pointer transition';
+                        
+                        const varPct = item.var_real_pct;
+                        const varCor = varPct >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50';
+                        const varIcon = varPct >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
+                        const varSinal = varPct >= 0 ? '+' : '';
+                        
+                        const dt1 = item.data_venda_anterior ? item.data_venda_anterior.split('-').reverse().join('/') : '-';
+                        const dt2 = item.data_transacao ? item.data_transacao.split('-').reverse().join('/') : '-';
+
+                        tr.innerHTML = `
+                            <td class="py-2.5 px-3">
+                                <div class="font-bold text-slate-900">${item.endereco_edificio}</div>
+                                <div class="text-[11px] text-purple-700 font-semibold">${item.unidade || 'Unidade'} • ${item.bairro_padronizado}</div>
+                            </td>
+                            <td class="py-2.5 px-3">
+                                <div class="font-semibold text-slate-700">R$ ${(item.valor_real_anterior || 0).toLocaleString('pt-BR')}</div>
+                                <div class="text-[10px] text-slate-400">${dt1}</div>
+                            </td>
+                            <td class="py-2.5 px-3">
+                                <div class="font-bold text-slate-900">R$ ${(item.valor_real_atual || 0).toLocaleString('pt-BR')}</div>
+                                <div class="text-[10px] text-slate-400">${dt2}</div>
+                            </td>
+                            <td class="py-2.5 px-3 text-center text-slate-600 whitespace-nowrap">
+                                <span class="px-2 py-0.5 rounded bg-slate-100 font-medium">${item.anos_entre_vendas} anos</span>
+                            </td>
+                            <td class="py-2.5 px-3">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${varCor}">
+                                    <i class="fa-solid ${varIcon} mr-1"></i> ${varSinal}${varPct}% real
+                                </span>
+                            </td>
+                            <td class="py-2.5 px-3">
+                                <button class="bg-purple-100 text-purple-800 hover:bg-purple-600 hover:text-white px-2 py-1 rounded font-semibold transition text-[11px]">Ver Prédio</button>
+                            </td>
+                        `;
+                        tr.addEventListener('click', () => {
+                            selectBuilding(item.endereco_edificio);
+                        });
+                        revTbody.appendChild(tr);
+                    });
+
+                    // 3. Últimas Vendas
+                    const recTbody = document.getElementById('recentesTbody');
+                    recTbody.innerHTML = '';
+                    (data.recentes || []).forEach(item => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-blue-50/60 cursor-pointer transition';
+                        const dataFmt = item.data_transacao ? item.data_transacao.split('-').reverse().join('/') : '-';
+                        tr.innerHTML = `
+                            <td class="py-2.5 px-4">
+                                <div class="font-bold text-slate-900">${item.endereco_edificio}</div>
+                                <div class="text-[11px] text-slate-500">${item.unidade || ''} • ${item.bairro_padronizado}</div>
+                            </td>
+                            <td class="py-2.5 px-3 text-slate-500 whitespace-nowrap">${dataFmt}</td>
+                            <td class="py-2.5 px-3 font-bold text-slate-900">R$ ${(item.valor_avaliacao_corrigido || 0).toLocaleString('pt-BR')}</td>
+                            <td class="py-2.5 px-3 font-semibold text-blue-600">${item.area_privativa_estimada || 0} m²</td>
+                            <td class="py-2.5 px-3 font-bold text-emerald-600">R$ ${(item.preco_m2_privativo_corrigido || 0).toLocaleString('pt-BR')}</td>
+                        `;
+                        tr.addEventListener('click', () => {
+                            selectBuilding(item.endereco_edificio);
+                        });
+                        recTbody.appendChild(tr);
+                    });
+                });
+        }
+
+        function switchHighlightsTab(tab) {
+            const tabEd = document.getElementById('tabEdificios');
+            const tabRev = document.getElementById('tabRevendas');
+            const tabRec = document.getElementById('tabRecentes');
+            const btnEd = document.getElementById('tabBtnEdificios');
+            const btnRev = document.getElementById('tabBtnRevendas');
+            const btnRec = document.getElementById('tabBtnRecentes');
+
+            [tabEd, tabRev, tabRec].forEach(t => t.classList.add('hidden'));
+            btnEd.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700 transition';
+            btnRev.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-100 text-purple-800 hover:bg-purple-200 transition';
+            btnRec.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700 transition';
+
+            if (tab === 'edificios') {
+                tabEd.classList.remove('hidden');
+                btnEd.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-sm transition';
+            } else if (tab === 'revendas') {
+                tabRev.classList.remove('hidden');
+                btnRev.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-600 text-white shadow-sm transition';
+            } else {
+                tabRec.classList.remove('hidden');
+                btnRec.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-sm transition';
+            }
+        }
+
+        function backToHighlights() {
+            document.getElementById('buildingView').classList.add('hidden');
+            document.getElementById('defaultHighlightsView').classList.remove('hidden');
+        }
+
+        function loadMapPoints(bairro = "") {
+            markersLayer.clearLayers();
+            const url = bairro ? `/api/mapa_pontos?bairro=${encodeURIComponent(bairro)}` : '/api/mapa_pontos';
+            
+            fetch(url)
+                .then(r => r.json())
+                .then(points => {
+                    points.forEach(p => {
+                        const lat = parseFloat(p.latitude);
+                        const lng = parseFloat(p.longitude);
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                            const preco = p.m2_privativo_medio;
+                            let cor = '#10b981';
+                            if (preco > 8000) cor = '#ef4444';
+                            else if (preco > 6500) cor = '#f59e0b';
+                            else if (preco > 5000) cor = '#3b82f6';
+
+                            const marker = L.circleMarker([lat, lng], {
+                                radius: Math.min(Math.max(p.total_transacoes * 1.1, 5), 14),
+                                fillColor: cor,
+                                color: '#ffffff',
+                                weight: 1.5,
+                                fillOpacity: 0.85
+                            });
+
+                            marker.on('click', () => {
+                                selectBuilding(p.endereco_edificio);
+                            });
+
+                            marker.bindTooltip(`
+                                <b>${p.endereco_edificio}</b><br>
+                                Preço Médio: R$ ${p.m2_privativo_medio.toLocaleString('pt-BR')}/m²<br>
+                                <b>${p.total_transacoes} vendas</b> (${p.total_revendas || 0} re-vendas)
+                            `, { direction: 'top' });
+
+                            markersLayer.addLayer(marker);
+                        }
+                    });
+                });
+        }
+
+        function filterByBairro(bairro) {
+            loadMapPoints(bairro);
+            loadHighlights(bairro);
+            if (bairro && geojsonLayer) {
+                geojsonLayer.eachLayer(layer => {
+                    const name = layer.feature?.properties?.bairro || layer.feature?.properties?.nome;
+                    if (name && name.toLowerCase() === bairro.toLowerCase()) {
+                        map.fitBounds(layer.getBounds(), { padding: [20, 20] });
+                    }
+                });
+            }
+        }
+
+        function setupSearch() {
+            const input = document.getElementById('searchInput');
+            const dropdown = document.getElementById('searchDropdown');
+            let timeout = null;
+
+            input.addEventListener('input', () => {
+                clearTimeout(timeout);
+                const q = input.value.trim();
+                if (q.length < 2) {
+                    dropdown.classList.add('hidden');
+                    return;
+                }
+
+                timeout = setTimeout(() => {
+                    const bairro = document.getElementById('bairroSelect').value;
+                    fetch(`/api/busca?q=${encodeURIComponent(q)}&bairro=${encodeURIComponent(bairro)}`)
+                        .then(r => r.json())
+                        .then(results => {
+                            dropdown.innerHTML = '';
+                            if (results.length === 0) {
+                                dropdown.innerHTML = '<div class="p-3 text-sm text-slate-400 text-center">Nenhum endereço encontrado</div>';
+                            } else {
+                                results.forEach(item => {
+                                    const el = document.createElement('div');
+                                    el.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0 transition';
+                                    el.innerHTML = `
+                                        <div class="font-bold text-slate-800 text-sm">${item.endereco_edificio}</div>
+                                        <div class="text-xs text-slate-500 mt-0.5 flex items-center justify-between">
+                                            <span>${item.bairro_padronizado} • ${item.total_transacoes} vendas (${item.total_revendas || 0} re-vendas)</span>
+                                            <span class="font-bold text-blue-600">R$ ${item.m2_privativo_medio.toLocaleString('pt-BR')}/m²</span>
+                                        </div>
+                                    `;
+                                    el.addEventListener('click', () => {
+                                        dropdown.classList.add('hidden');
+                                        input.value = item.endereco_edificio;
+                                        selectBuilding(item.endereco_edificio);
+                                        if (item.latitude && item.longitude) {
+                                            map.setView([item.latitude, item.longitude], 17);
+                                        }
+                                    });
+                                    dropdown.appendChild(el);
+                                });
+                            }
+                            dropdown.classList.remove('hidden');
+                        });
+                }, 200);
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+
+        function toggleOnlyRevendasFilter() {
+            showOnlyRevendas = document.getElementById('chkOnlyRevendas').checked;
+            renderBuildingTransactions();
+        }
+
+        function selectBuilding(endereco) {
+            currentBuildingAddress = endereco;
+            document.getElementById('defaultHighlightsView').classList.add('hidden');
+            document.getElementById('buildingView').classList.remove('hidden');
+            document.getElementById('chkOnlyRevendas').checked = false;
+            showOnlyRevendas = false;
+
+            fetch(`/api/edificio?endereco=${encodeURIComponent(endereco)}`)
+                .then(r => r.json())
+                .then(data => {
+                    const resumo = data.resumo || {};
+                    const transacoes = data.transacoes || [];
+                    currentTransactionsData = transacoes;
+
+                    document.getElementById('bldgAddress').textContent = endereco;
+                    document.getElementById('bldgBairroBadge').textContent = resumo.bairro_padronizado || 'Recife';
+                    document.getElementById('bldgM2Medio').textContent = `R$ ${(resumo.m2_privativo_medio || 0).toLocaleString('pt-BR')}`;
+                    document.getElementById('bldgValorMedio').textContent = `R$ ${(resumo.valor_medio_corrigido || 0).toLocaleString('pt-BR')}`;
+                    document.getElementById('bldgAreaMedia').textContent = `${resumo.area_privativa_media || 0} m²`;
+                    document.getElementById('bldgTotalTransacoes').textContent = `${transacoes.length} (${resumo.total_revendas || 0} re-vendas)`;
+
+                    renderBuildingTransactions();
+                    renderBuildingChart(transacoes);
+                });
+        }
+
+        function renderBuildingTransactions() {
+            const tbody = document.getElementById('transactionsTbody');
+            tbody.innerHTML = '';
+
+            let filtered = currentTransactionsData;
+            if (showOnlyRevendas) {
+                filtered = filtered.filter(t => t.eh_revenda || t.total_vendas_imovel > 1);
+            }
+
+            document.getElementById('tableCountBadge').textContent = `${filtered.length} transações exibidas`;
+
+            filtered.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition';
+                if (t.eh_revenda || t.total_vendas_imovel > 1) {
+                    tr.classList.add('revenda-border', 'bg-purple-50/20');
+                }
+                
+                const padraoBadge = t.padrao_acabamento ? `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700">${t.padrao_acabamento}</span>` : '-';
+                const dataFmt = t.data_transacao ? t.data_transacao.split('-').reverse().join('/') : '-';
+
+                // Repeated Sales Badge & Metric
+                let revendaBadge = '<span class="text-slate-400 text-[11px]">-</span>';
+                if (t.eh_revenda || t.total_vendas_imovel > 1) {
+                    if (t.ordem_venda === 1) {
+                        revendaBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-100 text-purple-800" title="Unidade re-vendida posteriormente"><i class="fa-solid fa-rotate mr-1"></i> 1ª Venda</span>`;
+                    } else {
+                        const varPct = t.var_real_pct;
+                        const isPos = varPct >= 0;
+                        const cor = isPos ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800';
+                        const sinal = isPos ? '+' : '';
+                        const dtAnt = t.data_venda_anterior ? t.data_venda_anterior.split('-').reverse().join('/') : '';
+                        
+                        revendaBadge = `
+                            <div>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${cor}" title="Venda anterior em ${dtAnt} por R$ ${(t.valor_real_anterior || 0).toLocaleString('pt-BR')}">
+                                    <i class="fa-solid fa-rotate mr-1"></i> ${t.ordem_venda}ª Venda (${sinal}${varPct}% real)
+                                </span>
+                                <div class="text-[10px] text-slate-500 mt-0.5">vs. ${dtAnt}</div>
+                            </div>
+                        `;
+                    }
+                }
+
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 font-bold text-slate-900">${t.unidade || 'Unidade'}</td>
+                    <td class="py-2.5 px-3 text-slate-500 whitespace-nowrap">${dataFmt}</td>
+                    <td class="py-2.5 px-3">${revendaBadge}</td>
+                    <td class="py-2.5 px-3">
+                        <div class="font-bold text-slate-900">R$ ${(t.valor_avaliacao_corrigido || 0).toLocaleString('pt-BR')}</div>
+                        <div class="text-[10px] text-slate-400">Nominal: R$ ${(t.valor_nominal || 0).toLocaleString('pt-BR')}</div>
+                    </td>
+                    <td class="py-2.5 px-3 font-semibold text-blue-600">${t.area_privativa_estimada || 0} m²</td>
+                    <td class="py-2.5 px-3 font-bold text-emerald-600">R$ ${(t.preco_m2_privativo_corrigido || 0).toLocaleString('pt-BR')}</td>
+                    <td class="py-2.5 px-3">${padraoBadge}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function setChartMode(mode) {
+            currentChartMode = mode;
+            ['chartBtnBar', 'chartBtnLine', 'chartBtnScatter'].forEach(id => {
+                const btn = document.getElementById(id);
+                btn.className = 'px-2 py-0.5 rounded text-slate-500 hover:text-slate-800 transition';
+            });
+
+            if (mode === 'bar') {
+                document.getElementById('chartBtnBar').className = 'px-2 py-0.5 rounded bg-white shadow-sm font-bold text-blue-600 transition';
+            } else if (mode === 'line') {
+                document.getElementById('chartBtnLine').className = 'px-2 py-0.5 rounded bg-white shadow-sm font-bold text-blue-600 transition';
+            } else {
+                document.getElementById('chartBtnScatter').className = 'px-2 py-0.5 rounded bg-white shadow-sm font-bold text-blue-600 transition';
+            }
+
+            renderBuildingChart(currentTransactionsData);
+        }
+
+        function renderBuildingChart(transacoes) {
+            const ctx = document.getElementById('bldgChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            if (!transacoes || transacoes.length === 0) return;
+
+            const yearMap = {};
+            transacoes.forEach(t => {
+                const yr = t.data_transacao ? t.data_transacao.slice(0, 4) : (t.ano_arquivo || 'Outros');
+                if (!yearMap[yr]) {
+                    yearMap[yr] = [];
+                }
+                if (t.preco_m2_privativo_corrigido) {
+                    yearMap[yr].push(t.preco_m2_privativo_corrigido);
+                }
+            });
+
+            const years = Object.keys(yearMap).sort();
+            const yearAvg = years.map(yr => {
+                const vals = yearMap[yr];
+                const sum = vals.reduce((a, b) => a + b, 0);
+                return Math.round(sum / vals.length);
+            });
+            const yearCounts = years.map(yr => yearMap[yr].length);
+
+            if (currentChartMode === 'bar') {
+                chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: years,
+                        datasets: [{
+                            label: 'Média R$/m² Privativo Real',
+                            data: yearAvg,
+                            backgroundColor: 'rgba(37, 99, 235, 0.75)',
+                            hoverBackgroundColor: 'rgba(37, 99, 235, 1)',
+                            borderRadius: 6,
+                            maxBarThickness: 38
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    title: (items) => `Ano: ${items[0].label}`,
+                                    label: (item) => {
+                                        const idx = item.dataIndex;
+                                        return [
+                                            `Preço Médio: R$ ${item.raw.toLocaleString('pt-BR')} / m²`,
+                                            `Volume de Vendas: ${yearCounts[idx]} transações`
+                                        ];
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { size: 11, weight: 'bold' }, color: '#475569' }
+                            },
+                            y: {
+                                ticks: {
+                                    font: { size: 10 },
+                                    callback: (v) => 'R$ ' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v)
+                                },
+                                grid: { color: '#f1f5f9' }
+                            }
+                        }
+                    }
+                });
+            } else if (currentChartMode === 'line') {
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: years,
+                        datasets: [{
+                            label: 'Média Anual (R$/m²)',
+                            data: yearAvg,
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#ffffff',
+                            pointBorderColor: '#2563eb',
+                            pointBorderWidth: 2,
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    title: (items) => `Ano: ${items[0].label}`,
+                                    label: (item) => [
+                                        `Média: R$ ${item.raw.toLocaleString('pt-BR')} / m²`,
+                                        `Vendas: ${yearCounts[item.dataIndex]} unidades`
+                                    ]
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { size: 11, weight: 'bold' }, color: '#475569' }
+                            },
+                            y: {
+                                ticks: {
+                                    font: { size: 10 },
+                                    callback: (v) => 'R$ ' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v)
+                                },
+                                grid: { color: '#f1f5f9' }
+                            }
+                        }
+                    }
+                });
+            } else {
+                const sorted = [...transacoes].sort((a, b) => (a.data_transacao > b.data_transacao ? 1 : -1));
+                const labels = sorted.map(t => t.data_transacao);
+                const dataPoints = sorted.map(t => t.preco_m2_privativo_corrigido);
+
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Preço / m² Individual',
+                            data: dataPoints,
+                            showLine: false,
+                            pointBackgroundColor: 'rgba(37, 99, 235, 0.65)',
+                            pointBorderColor: '#1e40af',
+                            pointBorderWidth: 1,
+                            pointRadius: 4,
+                            pointHoverRadius: 7
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    title: (items) => `Data: ${items[0].label}`,
+                                    label: (context) => {
+                                        const t = sorted[context.dataIndex];
+                                        return [
+                                            `Unidade: ${t.unidade || 'Apto'}`,
+                                            `Preço / m²: R$ ${context.raw.toLocaleString('pt-BR')}`,
+                                            `Valor: R$ ${(t.valor_avaliacao_corrigido || 0).toLocaleString('pt-BR')}`
+                                        ];
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    maxTicksLimit: 6,
+                                    font: { size: 10 },
+                                    callback: function(val, index) {
+                                        const dateStr = this.getLabelForValue(val);
+                                        return dateStr ? dateStr.slice(0, 4) : '';
+                                    }
+                                },
+                                grid: { display: false }
+                            },
+                            y: {
+                                ticks: {
+                                    font: { size: 10 },
+                                    callback: (v) => 'R$ ' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v)
+                                },
+                                grid: { color: '#f1f5f9' }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function exportTableToCSV() {
+            if (!currentTransactionsData || currentTransactionsData.length === 0) return;
+            const headers = ["Unidade", "Data Transacao", "Ordem Venda", "Valor Corrigido IPCA", "Valor Nominal", "Area Privativa Estimada", "Preco m2 Privativo Corrigido", "Data Venda Anterior", "Valor Real Anterior", "Variacao Real Pct", "Padrao Acabamento"];
+            const rows = currentTransactionsData.map(t => [
+                `"${t.unidade || ''}"`,
+                `"${t.data_transacao || ''}"`,
+                t.ordem_venda || 1,
+                t.valor_avaliacao_corrigido || 0,
+                t.valor_nominal || 0,
+                t.area_privativa_estimada || 0,
+                t.preco_m2_privativo_corrigido || 0,
+                `"${t.data_venda_anterior || ''}"`,
+                t.valor_real_anterior || 0,
+                t.var_real_pct || 0,
+                `"${t.padrao_acabamento || ''}"`
+            ]);
+
+            const csvContent = "data:text/csv;charset=utf-8-sig," + [headers.join(';'), ...rows.map(e => e.join(';'))].join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `transacoes_${currentBuildingAddress.replace(/[^a-zA-Z0-9]/g, '_')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
