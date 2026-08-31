@@ -3,118 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ITBI Recife Analytics - Explorador de Imóveis e Transações</title>
+    <title>Recife Imóveis — Base de Transações ITBI</title>
+    
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    
     <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
     <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        body { font-feature-settings: "cv02", "cv03", "cv04", "cv11"; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .tabular { font-variant-numeric: tabular-nums; }
         .revenda-border { border-left: 3px solid #8b5cf6 !important; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 flex flex-col h-screen overflow-hidden">
+<body class="bg-slate-100 text-slate-800 flex flex-col h-screen overflow-hidden font-sans antialiased selection:bg-blue-100 selection:text-blue-900">
 
-    <!-- Top Header -->
-    <header class="bg-slate-900 text-white px-6 py-3 flex items-center justify-between shadow-md z-30 shrink-0">
+    <!-- Top Navigation Bar -->
+    <header class="bg-[#0f172a] text-white px-5 py-2.5 flex items-center justify-between border-b border-slate-800 shadow-sm z-30 shrink-0">
         <div class="flex items-center space-x-3">
-            <div class="bg-blue-600 p-2 rounded-lg text-white">
-                <i class="fa-solid fa-building text-xl"></i>
+            <div class="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700/80 flex items-center justify-center text-slate-200 shadow-inner">
+                <i class="fa-solid fa-chart-line text-sm"></i>
             </div>
             <div>
-                <h1 class="font-bold text-lg leading-tight">ITBI Recife • Painel de Transações</h1>
-                <p class="text-xs text-slate-400">151.848 registros de ITBI (2015 – 2026)</p>
+                <div class="flex items-center space-x-2">
+                    <h1 class="font-semibold text-sm text-white tracking-tight leading-none">Recife Imóveis</h1>
+                    <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700/80 tracking-wide">ITBI 2015–2026</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-0.5">Histórico oficial de compras e vendas por condomínio</p>
             </div>
         </div>
 
-        <!-- Search & Filter Controls -->
-        <div class="flex items-center space-x-3 w-1/2 max-w-2xl">
+        <!-- Search & Global Filter Controls -->
+        <div class="flex items-center space-x-2.5 w-1/2 max-w-xl">
             <div class="relative flex-1">
-                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
-                <input id="searchInput" type="text" placeholder="Buscar por rua, avenida ou condomínio..." 
-                       class="w-full bg-slate-800 text-white placeholder-slate-400 text-sm pl-9 pr-4 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 transition shadow-inner">
-                <div id="searchDropdown" class="absolute top-11 left-0 w-full bg-white text-slate-800 rounded-lg shadow-xl border border-slate-200 hidden max-h-80 overflow-y-auto custom-scrollbar z-50"></div>
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+                <input id="searchInput" type="text" placeholder="Buscar por condomínio, logradouro ou bairro..." 
+                       class="w-full bg-[#1e293b] text-slate-100 placeholder-slate-400 text-xs pl-8 pr-7 py-2 rounded-md border border-slate-700/80 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition shadow-inner">
+                <span class="absolute right-2 top-2 text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700 font-mono pointer-events-none">/</span>
+                <div id="searchDropdown" class="absolute top-10 left-0 w-full bg-white text-slate-800 rounded-lg shadow-xl border border-slate-200 hidden max-h-80 overflow-y-auto custom-scrollbar z-50 divide-y divide-slate-100"></div>
             </div>
-            <select id="bairroSelect" class="bg-slate-800 text-white text-sm px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 transition">
+            
+            <select id="bairroSelect" class="bg-[#1e293b] text-slate-200 text-xs px-3 py-2 rounded-md border border-slate-700/80 focus:outline-none focus:border-slate-500 transition cursor-pointer">
                 <option value="">Todos os Bairros</option>
             </select>
 
-            <!-- Layout Mode Toggles -->
-            <div class="flex bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
-                <button onclick="setLayout('map')" id="btnMapOnly" title="Ver apenas o Mapa" class="px-2.5 py-1 rounded text-slate-300 hover:text-white transition">
+            <!-- Layout Segmented Switcher -->
+            <div class="flex bg-[#1e293b] p-0.5 rounded-md border border-slate-700/80 text-xs">
+                <button onclick="setLayout('map')" id="btnMapOnly" title="Ver apenas o Mapa" class="px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition">
                     <i class="fa-solid fa-map"></i>
                 </button>
-                <button onclick="setLayout('split')" id="btnSplit" title="Divisão 50/50" class="px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition">
+                <button onclick="setLayout('split')" id="btnSplit" title="Divisão 50/50" class="px-2 py-1 rounded bg-slate-700 text-white font-medium shadow-sm transition">
                     <i class="fa-solid fa-table-columns"></i>
                 </button>
-                <button onclick="setLayout('table')" id="btnTableOnly" title="Ver apenas Tabela" class="px-2.5 py-1 rounded text-slate-300 hover:text-white transition">
+                <button onclick="setLayout('table')" id="btnTableOnly" title="Ver apenas Tabela" class="px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition">
                     <i class="fa-solid fa-table-list"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Content Layout -->
+    <!-- Main Workspace Container -->
     <div class="flex-1 flex overflow-hidden" id="mainContainer">
         
-        <!-- Left: Map Container -->
-        <div id="mapCol" class="w-1/2 h-full relative border-r border-slate-200 transition-all duration-200">
+        <!-- Left Pane: Map View -->
+        <div id="mapCol" class="w-1/2 h-full relative border-r border-slate-200 transition-all duration-200 bg-slate-100">
             <div id="map" class="w-full h-full"></div>
             
-            <!-- Map Legend -->
-            <div class="absolute bottom-4 left-4 bg-white/95 backdrop-blur px-4 py-3 rounded-lg shadow-lg border border-slate-200 text-xs z-[1000] space-y-1.5 pointer-events-auto">
-                <div class="font-bold text-slate-700 mb-1">Preço / m² Privativo</div>
-                <div class="flex items-center space-x-2"><span class="w-3.5 h-3.5 rounded-full bg-[#ef4444] inline-block shadow-sm"></span> <span>> R$ 8.000 / m²</span></div>
-                <div class="flex items-center space-x-2"><span class="w-3.5 h-3.5 rounded-full bg-[#f59e0b] inline-block shadow-sm"></span> <span>R$ 6.500 – R$ 8.000</span></div>
-                <div class="flex items-center space-x-2"><span class="w-3.5 h-3.5 rounded-full bg-[#3b82f6] inline-block shadow-sm"></span> <span>R$ 5.000 – R$ 6.500</span></div>
-                <div class="flex items-center space-x-2"><span class="w-3.5 h-3.5 rounded-full bg-[#10b981] inline-block shadow-sm"></span> <span>< R$ 5.000 / m²</span></div>
+            <!-- Sleek Minimalist Map Legend -->
+            <div class="absolute bottom-4 left-4 bg-white/95 backdrop-blur-md px-3.5 py-3 rounded-lg shadow-md border border-slate-200/90 text-xs z-[1000] space-y-1.5 pointer-events-auto">
+                <div class="font-semibold text-slate-800 text-[11px] uppercase tracking-wider mb-1">Preço / m² Privativo</div>
+                <div class="flex items-center space-x-2 text-[11px] text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-[#ef4444] inline-block shadow-sm"></span> <span>> R$ 8.000 / m²</span></div>
+                <div class="flex items-center space-x-2 text-[11px] text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-[#f59e0b] inline-block shadow-sm"></span> <span>R$ 6.500 – R$ 8.000</span></div>
+                <div class="flex items-center space-x-2 text-[11px] text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-[#3b82f6] inline-block shadow-sm"></span> <span>R$ 5.000 – R$ 6.500</span></div>
+                <div class="flex items-center space-x-2 text-[11px] text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-[#10b981] inline-block shadow-sm"></span> <span>< R$ 5.000 / m²</span></div>
             </div>
         </div>
 
-        <!-- Right: Details & Transactions Panel -->
+        <!-- Right Pane: Analytics & Transactions -->
         <div id="tableCol" class="w-1/2 h-full flex flex-col bg-white overflow-hidden transition-all duration-200">
             
-            <!-- Default View: 3 Active Tabs (Edifícios, Re-vendas, Recentes) -->
+            <!-- Default View: Highlight Tabs -->
             <div id="defaultHighlightsView" class="flex-1 flex flex-col overflow-hidden">
                 
-                <!-- Quick Navigation Tabs -->
-                <div class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
-                    <div class="flex space-x-2">
-                        <button onclick="switchHighlightsTab('edificios')" id="tabBtnEdificios" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-sm transition">
-                            <i class="fa-solid fa-city mr-1"></i> Principais Edifícios
+                <!-- Tab Navigation Header -->
+                <div class="px-5 py-2.5 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between shrink-0">
+                    <div class="flex bg-slate-200/80 p-0.5 rounded-lg text-xs">
+                        <button onclick="switchHighlightsTab('edificios')" id="tabBtnEdificios" class="px-3 py-1 rounded-md text-xs font-semibold bg-white text-slate-900 shadow-sm transition">
+                            <i class="fa-solid fa-city mr-1.5 text-slate-500"></i> Principais Edifícios
                         </button>
-                        <button onclick="switchHighlightsTab('revendas')" id="tabBtnRevendas" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-100 text-purple-800 hover:bg-purple-200 transition">
-                            <i class="fa-solid fa-rotate mr-1"></i> Imóveis com Revenda
+                        <button onclick="switchHighlightsTab('revendas')" id="tabBtnRevendas" class="px-3 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 transition">
+                            <i class="fa-solid fa-rotate mr-1.5 text-slate-500"></i> Imóveis com Revenda
                         </button>
-                        <button onclick="switchHighlightsTab('recentes')" id="tabBtnRecentes" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700 transition">
-                            <i class="fa-solid fa-clock-rotate-left mr-1"></i> Transações Recentes
+                        <button onclick="switchHighlightsTab('recentes')" id="tabBtnRecentes" class="px-3 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 transition">
+                            <i class="fa-solid fa-clock-rotate-left mr-1.5 text-slate-500"></i> Transações Recentes
                         </button>
                     </div>
-                    <span class="text-xs text-slate-500 font-medium" id="highlightsSubtitle">Selecione um endereço para ver o histórico</span>
+                    <span class="text-[11px] text-slate-400 font-medium" id="highlightsSubtitle">Selecione um endereço para ver o histórico</span>
                 </div>
 
                 <!-- Tab 1: Top Edifícios Table -->
                 <div id="tabEdificios" class="flex-1 overflow-y-auto custom-scrollbar">
                     <table class="w-full text-left text-xs border-collapse">
-                        <thead class="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
+                        <thead class="bg-slate-50 text-slate-500 font-medium uppercase tracking-wider text-[10px] sticky top-0 border-b border-slate-200 z-10">
                             <tr>
                                 <th class="py-2.5 px-4 font-semibold">Endereço / Condomínio</th>
                                 <th class="py-2.5 px-3 font-semibold">Bairro</th>
                                 <th class="py-2.5 px-3 font-semibold text-center">Vendas</th>
                                 <th class="py-2.5 px-3 font-semibold text-center">Revendas</th>
-                                <th class="py-2.5 px-3 font-semibold">Preço / m² Priv.</th>
-                                <th class="py-2.5 px-3 font-semibold">Ação</th>
+                                <th class="py-2.5 px-3 font-semibold text-right">Preço Médio / m²</th>
+                                <th class="py-2.5 px-3 font-semibold text-center">Ação</th>
                             </tr>
                         </thead>
                         <tbody id="topEdificiosTbody" class="divide-y divide-slate-100 text-slate-700">
@@ -126,14 +155,14 @@
                 <!-- Tab 2: Repeated Sales Case Studies Table -->
                 <div id="tabRevendas" class="flex-1 overflow-y-auto custom-scrollbar hidden">
                     <table class="w-full text-left text-xs border-collapse">
-                        <thead class="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
+                        <thead class="bg-slate-50 text-slate-500 font-medium uppercase tracking-wider text-[10px] sticky top-0 border-b border-slate-200 z-10">
                             <tr>
-                                <th class="py-2.5 px-3 font-semibold">Imóvel / Endereço</th>
+                                <th class="py-2.5 px-4 font-semibold">Imóvel / Endereço</th>
                                 <th class="py-2.5 px-3 font-semibold">1ª Venda (IPCA)</th>
                                 <th class="py-2.5 px-3 font-semibold">Revenda (IPCA)</th>
                                 <th class="py-2.5 px-3 font-semibold text-center">Prazo</th>
-                                <th class="py-2.5 px-3 font-semibold">Variação Real</th>
-                                <th class="py-2.5 px-3 font-semibold">Ação</th>
+                                <th class="py-2.5 px-3 font-semibold text-center">Variação Real</th>
+                                <th class="py-2.5 px-3 font-semibold text-center">Ação</th>
                             </tr>
                         </thead>
                         <tbody id="revendasTbody" class="divide-y divide-slate-100 text-slate-700">
@@ -145,13 +174,13 @@
                 <!-- Tab 3: Recent Transactions Table -->
                 <div id="tabRecentes" class="flex-1 overflow-y-auto custom-scrollbar hidden">
                     <table class="w-full text-left text-xs border-collapse">
-                        <thead class="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
+                        <thead class="bg-slate-50 text-slate-500 font-medium uppercase tracking-wider text-[10px] sticky top-0 border-b border-slate-200 z-10">
                             <tr>
                                 <th class="py-2.5 px-4 font-semibold">Endereço / Unidade</th>
                                 <th class="py-2.5 px-3 font-semibold">Data</th>
-                                <th class="py-2.5 px-3 font-semibold">Valor Corrigido</th>
-                                <th class="py-2.5 px-3 font-semibold">Área Priv.</th>
-                                <th class="py-2.5 px-3 font-semibold">Preço / m²</th>
+                                <th class="py-2.5 px-3 font-semibold text-right">Valor Corrigido</th>
+                                <th class="py-2.5 px-3 font-semibold text-right">Área Priv.</th>
+                                <th class="py-2.5 px-3 font-semibold text-right">Preço / m²</th>
                             </tr>
                         </thead>
                         <tbody id="recentesTbody" class="divide-y divide-slate-100 text-slate-700">
@@ -162,46 +191,46 @@
 
             </div>
 
-            <!-- Single Building Detailed View (Loaded on click) -->
+            <!-- Single Building Detailed View -->
             <div id="buildingView" class="flex-1 flex flex-col overflow-hidden hidden">
                 
-                <!-- Building Header & Summary -->
-                <div class="p-5 border-b border-slate-200 bg-slate-50/70 shrink-0">
+                <!-- Building Header & Key Indicators -->
+                <div class="p-4 border-b border-slate-200 bg-slate-50/50 shrink-0">
                     <div class="flex items-start justify-between">
                         <div>
-                            <div class="flex items-center space-x-2 mb-1">
-                                <button onclick="backToHighlights()" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-2.5 py-1 rounded-md transition flex items-center space-x-1.5 shadow-sm">
-                                    <i class="fa-solid fa-arrow-left"></i> <span>Voltar à Lista</span>
+                            <div class="flex items-center space-x-2 mb-1.5">
+                                <button onclick="backToHighlights()" class="text-[11px] bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium px-2.5 py-0.5 rounded shadow-sm transition flex items-center space-x-1">
+                                    <i class="fa-solid fa-arrow-left text-[10px]"></i> <span>Voltar</span>
                                 </button>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800" id="bldgBairroBadge">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 border border-blue-200/60 text-blue-700" id="bldgBairroBadge">
                                     Bairro
                                 </span>
                             </div>
-                            <h2 class="text-lg font-bold text-slate-900 leading-snug" id="bldgAddress">Nome do Endereço</h2>
+                            <h2 class="text-base font-bold text-slate-900 tracking-tight leading-snug" id="bldgAddress">Nome do Endereço</h2>
                         </div>
-                        <button onclick="exportTableToCSV()" class="text-xs bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold px-3 py-1.5 rounded-lg shadow-sm flex items-center space-x-1.5 transition">
-                            <i class="fa-solid fa-file-arrow-down text-emerald-600"></i>
+                        <button onclick="exportTableToCSV()" class="text-xs bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium px-3 py-1.5 rounded-md shadow-sm flex items-center space-x-1.5 transition">
+                            <i class="fa-solid fa-file-arrow-down text-slate-500"></i>
                             <span>Exportar CSV</span>
                         </button>
                     </div>
 
-                    <!-- Metrics Cards -->
-                    <div class="grid grid-cols-4 gap-3 mt-3">
-                        <div class="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
-                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Preço / m² Médio</div>
-                            <div class="text-base font-bold text-blue-600" id="bldgM2Medio">R$ 0</div>
+                    <!-- Refined Metric Cards -->
+                    <div class="grid grid-cols-4 gap-2.5 mt-3">
+                        <div class="bg-white p-3 rounded-lg border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+                            <div class="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Preço Médio / m²</div>
+                            <div class="text-base font-bold text-slate-900 font-mono tracking-tight mt-0.5" id="bldgM2Medio">R$ 0</div>
                         </div>
-                        <div class="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
-                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Valor Médio (IPCA)</div>
-                            <div class="text-base font-bold text-slate-800" id="bldgValorMedio">R$ 0</div>
+                        <div class="bg-white p-3 rounded-lg border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+                            <div class="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Ticket Médio (IPCA)</div>
+                            <div class="text-base font-bold text-slate-900 font-mono tracking-tight mt-0.5" id="bldgValorMedio">R$ 0</div>
                         </div>
-                        <div class="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
-                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Área Priv. Média</div>
-                            <div class="text-base font-bold text-slate-800" id="bldgAreaMedia">0 m²</div>
+                        <div class="bg-white p-3 rounded-lg border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+                            <div class="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Área Priv. Média</div>
+                            <div class="text-base font-bold text-slate-900 font-mono tracking-tight mt-0.5" id="bldgAreaMedia">0 m²</div>
                         </div>
-                        <div class="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
-                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Total Vendas</div>
-                            <div class="text-base font-bold text-emerald-600" id="bldgTotalTransacoes">0</div>
+                        <div class="bg-white p-3 rounded-lg border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+                            <div class="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Transações Registradas</div>
+                            <div class="text-base font-bold text-slate-900 font-mono tracking-tight mt-0.5" id="bldgTotalTransacoes">0</div>
                         </div>
                     </div>
                 </div>
@@ -210,16 +239,16 @@
                 <div class="px-5 py-3 border-b border-slate-200 bg-white shrink-0">
                     <div class="flex items-center justify-between mb-2">
                         <div class="flex items-center space-x-2">
-                            <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                <i class="fa-solid fa-chart-line text-blue-600 mr-1"></i> Evolução do Preço / m²
+                            <span class="text-xs font-semibold text-slate-700 tracking-tight">
+                                Evolução do Preço / m²
                             </span>
-                            <span class="text-[11px] text-slate-400">(Média anual corrigida pelo IPCA)</span>
+                            <span class="text-[11px] text-slate-400 font-normal">(Média anual corrigida pelo IPCA)</span>
                         </div>
-                        <!-- Chart Mode Buttons -->
-                        <div class="flex bg-slate-100 p-0.5 rounded-lg text-[11px]">
-                            <button onclick="setChartMode('bar')" id="chartBtnBar" class="px-2 py-0.5 rounded bg-white shadow-sm font-bold text-blue-600 transition">Barras Anuais</button>
-                            <button onclick="setChartMode('line')" id="chartBtnLine" class="px-2 py-0.5 rounded text-slate-500 hover:text-slate-800 transition">Linha de Tendência</button>
-                            <button onclick="setChartMode('scatter')" id="chartBtnScatter" class="px-2 py-0.5 rounded text-slate-500 hover:text-slate-800 transition">Vendas Individuais</button>
+                        <!-- Chart Mode Switcher -->
+                        <div class="flex bg-slate-100 p-0.5 rounded-md text-[11px]">
+                            <button onclick="setChartMode('bar')" id="chartBtnBar" class="px-2.5 py-0.5 rounded bg-white shadow-sm font-semibold text-slate-900 transition">Barras Anuais</button>
+                            <button onclick="setChartMode('line')" id="chartBtnLine" class="px-2.5 py-0.5 rounded text-slate-500 hover:text-slate-900 transition">Tendência</button>
+                            <button onclick="setChartMode('scatter')" id="chartBtnScatter" class="px-2.5 py-0.5 rounded text-slate-500 hover:text-slate-900 transition">Transações Individuais</button>
                         </div>
                     </div>
                     
@@ -229,30 +258,29 @@
                 </div>
 
                 <!-- Transaction Table Header with Revendas Filter Toggle -->
-                <div class="px-5 py-2.5 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between shrink-0">
+                <div class="px-5 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
                     <div class="flex items-center space-x-3">
-                        <span class="text-xs font-bold text-slate-700 uppercase">Unidades Transacionadas</span>
-                        <!-- Filter Checkbox for Repeated Sales -->
-                        <label class="inline-flex items-center space-x-1.5 text-xs text-purple-800 font-semibold bg-purple-100/80 px-2.5 py-0.5 rounded-md cursor-pointer hover:bg-purple-200 transition">
-                            <input type="checkbox" id="chkOnlyRevendas" onchange="toggleOnlyRevendasFilter()" class="rounded text-purple-600 focus:ring-purple-500">
-                            <span><i class="fa-solid fa-rotate text-purple-600"></i> Apenas revendas</span>
+                        <span class="text-xs font-semibold text-slate-700 uppercase tracking-wider text-[10px]">Unidades Transacionadas</span>
+                        <label class="inline-flex items-center space-x-1.5 text-xs text-slate-600 font-medium px-2 py-0.5 rounded border border-slate-200 bg-white cursor-pointer hover:bg-slate-50 transition">
+                            <input type="checkbox" id="chkOnlyRevendas" onchange="toggleOnlyRevendasFilter()" class="rounded text-blue-600 focus:ring-blue-500">
+                            <span>Apenas revendas</span>
                         </label>
                     </div>
-                    <span class="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200" id="tableCountBadge">0 transações</span>
+                    <span class="text-xs font-medium text-slate-500 tabular" id="tableCountBadge">0 transações</span>
                 </div>
 
                 <!-- Transactions Table (Scrollable) -->
                 <div class="flex-1 overflow-y-auto custom-scrollbar p-0">
                     <table class="w-full text-left text-xs border-collapse" id="transactionsTable">
-                        <thead class="bg-slate-50 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
+                        <thead class="bg-slate-50 text-slate-500 font-medium uppercase tracking-wider text-[10px] sticky top-0 border-b border-slate-200 z-10">
                             <tr>
                                 <th class="py-2.5 px-3 font-semibold">Unidade / Apto</th>
                                 <th class="py-2.5 px-3 font-semibold">Data</th>
                                 <th class="py-2.5 px-3 font-semibold">Histórico de Revenda</th>
-                                <th class="py-2.5 px-3 font-semibold">Valor Corrigido (IPCA)</th>
-                                <th class="py-2.5 px-3 font-semibold">Área Priv.</th>
-                                <th class="py-2.5 px-3 font-semibold">Preço / m² Priv.</th>
-                                <th class="py-2.5 px-3 font-semibold">Padrão</th>
+                                <th class="py-2.5 px-3 font-semibold text-right">Valor Corrigido (IPCA)</th>
+                                <th class="py-2.5 px-3 font-semibold text-right">Área Priv.</th>
+                                <th class="py-2.5 px-3 font-semibold text-right">Preço / m² Priv.</th>
+                                <th class="py-2.5 px-3 font-semibold text-center">Padrão</th>
                             </tr>
                         </thead>
                         <tbody id="transactionsTbody" class="divide-y divide-slate-100 text-slate-700">
@@ -281,7 +309,21 @@
             loadMapPoints();
             loadHighlights();
             setupSearch();
+            setupKeyboardShortcuts();
         });
+
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                const searchInput = document.getElementById('searchInput');
+                if (e.key === '/' && document.activeElement !== searchInput) {
+                    e.preventDefault();
+                    searchInput.focus();
+                } else if (e.key === 'Escape' && document.activeElement === searchInput) {
+                    document.getElementById('searchDropdown').classList.add('hidden');
+                    searchInput.blur();
+                }
+            });
+        }
 
         function setLayout(mode) {
             const mapCol = document.getElementById('mapCol');
@@ -291,21 +333,21 @@
             const btnTable = document.getElementById('btnTableOnly');
 
             [btnMap, btnSplit, btnTable].forEach(b => {
-                b.className = 'px-2.5 py-1 rounded text-slate-300 hover:text-white transition';
+                b.className = 'px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition';
             });
 
             if (mode === 'map') {
                 mapCol.className = 'w-full h-full relative border-r border-slate-200 transition-all duration-200';
                 tableCol.className = 'hidden';
-                btnMap.className = 'px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition';
+                btnMap.className = 'px-2 py-1 rounded bg-slate-700 text-white font-medium shadow-sm transition';
             } else if (mode === 'table') {
                 mapCol.className = 'hidden';
                 tableCol.className = 'w-full h-full flex flex-col bg-white overflow-hidden transition-all duration-200';
-                btnTable.className = 'px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition';
+                btnTable.className = 'px-2 py-1 rounded bg-slate-700 text-white font-medium shadow-sm transition';
             } else {
                 mapCol.className = 'w-1/2 h-full relative border-r border-slate-200 transition-all duration-200';
                 tableCol.className = 'w-1/2 h-full flex flex-col bg-white overflow-hidden transition-all duration-200';
-                btnSplit.className = 'px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition';
+                btnSplit.className = 'px-2 py-1 rounded bg-slate-700 text-white font-medium shadow-sm transition';
             }
 
             setTimeout(() => { map.invalidateSize(); }, 250);
@@ -333,15 +375,15 @@
                 .then(geoData => {
                     geojsonLayer = L.geoJSON(geoData, {
                         style: {
-                            color: '#3b82f6',
+                            color: '#64748b',
                             weight: 1.2,
-                            opacity: 0.5,
-                            fillColor: '#93c5fd',
-                            fillOpacity: 0.08
+                            opacity: 0.45,
+                            fillColor: '#94a3b8',
+                            fillOpacity: 0.06
                         },
                         onEachFeature: (feature, layer) => {
                             const name = feature.properties.bairro || feature.properties.nome || feature.properties.E4_Descri || "Bairro";
-                            layer.bindTooltip(name, { sticky: true, className: 'text-xs font-semibold' });
+                            layer.bindTooltip(name, { sticky: true, className: 'text-xs font-medium' });
                             layer.on('click', () => {
                                 document.getElementById('bairroSelect').value = name;
                                 filterByBairro(name);
@@ -360,7 +402,7 @@
                     bairros.forEach(b => {
                         const opt = document.createElement('option');
                         opt.value = b.bairro;
-                        opt.textContent = `${b.bairro} (${b.total_transacoes.toLocaleString('pt-BR')} vendas • R$ ${b.m2_medio.toLocaleString('pt-BR')}/m²)`;
+                        opt.textContent = `${b.bairro} (${b.total_transacoes.toLocaleString('pt-BR')} vendas)`;
                         select.appendChild(opt);
                     });
 
@@ -380,15 +422,15 @@
                     topTbody.innerHTML = '';
                     (data.top_edificios || []).forEach(item => {
                         const tr = document.createElement('tr');
-                        tr.className = 'hover:bg-blue-50/60 cursor-pointer transition';
+                        tr.className = 'hover:bg-slate-50/80 cursor-pointer transition';
                         tr.innerHTML = `
-                            <td class="py-2.5 px-4 font-bold text-slate-900">${item.endereco_edificio}</td>
+                            <td class="py-2.5 px-4 font-medium text-slate-900">${item.endereco_edificio}</td>
                             <td class="py-2.5 px-3 text-slate-500">${item.bairro_padronizado}</td>
-                            <td class="py-2.5 px-3 text-center font-bold text-blue-600">${item.total_transacoes}</td>
-                            <td class="py-2.5 px-3 text-center font-bold text-purple-600">${item.total_revendas || 0}</td>
-                            <td class="py-2.5 px-3 font-bold text-emerald-600">R$ ${(item.m2_privativo_medio || 0).toLocaleString('pt-BR')}</td>
-                            <td class="py-2.5 px-3">
-                                <button class="bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white px-2.5 py-1 rounded font-semibold transition">Ver Unidades</button>
+                            <td class="py-2.5 px-3 text-center font-semibold text-slate-800 font-mono">${item.total_transacoes}</td>
+                            <td class="py-2.5 px-3 text-center font-medium text-purple-700 font-mono">${item.total_revendas || 0}</td>
+                            <td class="py-2.5 px-3 text-right font-semibold text-slate-900 font-mono">R$ ${(item.m2_privativo_medio || 0).toLocaleString('pt-BR')}</td>
+                            <td class="py-2.5 px-3 text-center">
+                                <button class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded text-[11px] font-medium transition">Detalhes</button>
                             </td>
                         `;
                         tr.addEventListener('click', () => {
@@ -400,15 +442,15 @@
                         topTbody.appendChild(tr);
                     });
 
-                    // 2. Casos de Re-venda
+                    // 2. Casos de Revenda
                     const revTbody = document.getElementById('revendasTbody');
                     revTbody.innerHTML = '';
                     (data.revendas_destaque || []).forEach(item => {
                         const tr = document.createElement('tr');
-                        tr.className = 'hover:bg-purple-50/60 cursor-pointer transition';
+                        tr.className = 'hover:bg-slate-50/80 cursor-pointer transition';
                         
                         const varPct = item.var_real_pct;
-                        const varCor = varPct >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50';
+                        const varCor = varPct >= 0 ? 'text-emerald-700 bg-emerald-50 border-emerald-200/60' : 'text-rose-700 bg-rose-50 border-rose-200/60';
                         const varIcon = varPct >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
                         const varSinal = varPct >= 0 ? '+' : '';
                         
@@ -416,28 +458,28 @@
                         const dt2 = item.data_transacao ? item.data_transacao.split('-').reverse().join('/') : '-';
 
                         tr.innerHTML = `
-                            <td class="py-2.5 px-3">
-                                <div class="font-bold text-slate-900">${item.endereco_edificio}</div>
-                                <div class="text-[11px] text-purple-700 font-semibold">${item.unidade || 'Unidade'} • ${item.bairro_padronizado}</div>
+                            <td class="py-2.5 px-4">
+                                <div class="font-medium text-slate-900">${item.endereco_edificio}</div>
+                                <div class="text-[11px] text-slate-500">${item.unidade || 'Unidade'} • ${item.bairro_padronizado}</div>
                             </td>
-                            <td class="py-2.5 px-3">
-                                <div class="font-semibold text-slate-700">R$ ${(item.valor_real_anterior || 0).toLocaleString('pt-BR')}</div>
-                                <div class="text-[10px] text-slate-400">${dt1}</div>
+                            <td class="py-2.5 px-3 font-mono">
+                                <div class="font-medium text-slate-700">R$ ${(item.valor_real_anterior || 0).toLocaleString('pt-BR')}</div>
+                                <div class="text-[10px] text-slate-400 font-sans">${dt1}</div>
                             </td>
-                            <td class="py-2.5 px-3">
-                                <div class="font-bold text-slate-900">R$ ${(item.valor_real_atual || 0).toLocaleString('pt-BR')}</div>
-                                <div class="text-[10px] text-slate-400">${dt2}</div>
+                            <td class="py-2.5 px-3 font-mono">
+                                <div class="font-semibold text-slate-900">R$ ${(item.valor_real_atual || 0).toLocaleString('pt-BR')}</div>
+                                <div class="text-[10px] text-slate-400 font-sans">${dt2}</div>
                             </td>
-                            <td class="py-2.5 px-3 text-center text-slate-600 whitespace-nowrap">
-                                <span class="px-2 py-0.5 rounded bg-slate-100 font-medium">${item.anos_entre_vendas} anos</span>
+                            <td class="py-2.5 px-3 text-center text-slate-600 font-mono whitespace-nowrap">
+                                <span class="px-2 py-0.5 rounded bg-slate-100 font-medium text-[11px]">${item.anos_entre_vendas} anos</span>
                             </td>
-                            <td class="py-2.5 px-3">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${varCor}">
-                                    <i class="fa-solid ${varIcon} mr-1"></i> ${varSinal}${varPct}% real
+                            <td class="py-2.5 px-3 text-center">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${varCor}">
+                                    <i class="fa-solid ${varIcon} mr-1 text-[10px]"></i> ${varSinal}${varPct}%
                                 </span>
                             </td>
-                            <td class="py-2.5 px-3">
-                                <button class="bg-purple-100 text-purple-800 hover:bg-purple-600 hover:text-white px-2 py-1 rounded font-semibold transition text-[11px]">Ver Prédio</button>
+                            <td class="py-2.5 px-3 text-center">
+                                <button class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded font-medium transition text-[11px]">Ver Prédio</button>
                             </td>
                         `;
                         tr.addEventListener('click', () => {
@@ -446,31 +488,26 @@
                         revTbody.appendChild(tr);
                     });
 
-                    // 3. Últimas Vendas
+                    // 3. Transações Recentes
                     const recTbody = document.getElementById('recentesTbody');
                     recTbody.innerHTML = '';
                     (data.recentes || []).forEach(item => {
                         const tr = document.createElement('tr');
-                        tr.className = 'hover:bg-blue-50/60 cursor-pointer transition';
+                        tr.className = 'hover:bg-slate-50/80 cursor-pointer transition';
                         const dataFmt = item.data_transacao ? item.data_transacao.split('-').reverse().join('/') : '-';
                         tr.innerHTML = `
                             <td class="py-2.5 px-4">
-                                <div class="font-bold text-slate-900">${item.endereco_edificio}</div>
+                                <div class="font-medium text-slate-900">${item.endereco_edificio}</div>
                                 <div class="text-[11px] text-slate-500">${item.unidade || ''} • ${item.bairro_padronizado}</div>
                             </td>
-                            <td class="py-2.5 px-3 text-slate-500 whitespace-nowrap">${dataFmt}</td>
-                            <td class="py-2.5 px-3 font-bold text-slate-900">R$ ${(item.valor_avaliacao_corrigido || 0).toLocaleString('pt-BR')}</td>
-                            <td class="py-2.5 px-3 font-semibold text-blue-600">${item.area_privativa_estimada || 0} m²</td>
-                            <td class="py-2.5 px-3 font-bold text-emerald-600">R$ ${(item.preco_m2_privativo_corrigido || 0).toLocaleString('pt-BR')}</td>
+                            <td class="py-2.5 px-3 text-slate-500 whitespace-nowrap font-mono text-[11px]">${dataFmt}</td>
+                            <td class="py-2.5 px-3 text-right font-semibold text-slate-900 font-mono">R$ ${(item.valor_avaliacao_corrigido || 0).toLocaleString('pt-BR')}</td>
+                            <td class="py-2.5 px-3 text-right font-medium text-slate-600 font-mono">${item.area_privativa_estimada || 0} m²</td>
+                            <td class="py-2.5 px-3 text-right font-semibold text-slate-900 font-mono">R$ ${(item.preco_m2_privativo_corrigido || 0).toLocaleString('pt-BR')}</td>
                         `;
                         tr.addEventListener('click', () => {
                             selectBuilding(item.endereco_edificio);
                         });
-                        recTbody.appendChild(tr);
-                    });
-                });
-        }
-
         function switchHighlightsTab(tab) {
             const tabEd = document.getElementById('tabEdificios');
             const tabRev = document.getElementById('tabRevendas');
@@ -480,19 +517,19 @@
             const btnRec = document.getElementById('tabBtnRecentes');
 
             [tabEd, tabRev, tabRec].forEach(t => t.classList.add('hidden'));
-            btnEd.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700 transition';
-            btnRev.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-100 text-purple-800 hover:bg-purple-200 transition';
-            btnRec.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700 transition';
+            [btnEd, btnRev, btnRec].forEach(b => {
+                b.className = 'px-3 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 transition';
+            });
 
             if (tab === 'edificios') {
                 tabEd.classList.remove('hidden');
-                btnEd.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-sm transition';
+                btnEd.className = 'px-3 py-1 rounded-md text-xs font-semibold bg-white text-slate-900 shadow-sm transition';
             } else if (tab === 'revendas') {
                 tabRev.classList.remove('hidden');
-                btnRev.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-600 text-white shadow-sm transition';
+                btnRev.className = 'px-3 py-1 rounded-md text-xs font-semibold bg-white text-slate-900 shadow-sm transition';
             } else {
                 tabRec.classList.remove('hidden');
-                btnRec.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-sm transition';
+                btnRec.className = 'px-3 py-1 rounded-md text-xs font-semibold bg-white text-slate-900 shadow-sm transition';
             }
         }
 
@@ -654,48 +691,47 @@
 
             filtered.forEach(t => {
                 const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-50 transition';
+                tr.className = 'hover:bg-slate-50/80 transition';
                 if (t.eh_revenda || t.total_vendas_imovel > 1) {
-                    tr.classList.add('revenda-border', 'bg-purple-50/20');
+                    tr.classList.add('revenda-border', 'bg-purple-50/10');
                 }
                 
-                const padraoBadge = t.padrao_acabamento ? `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700">${t.padrao_acabamento}</span>` : '-';
+                const padraoBadge = t.padrao_acabamento ? `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200/60">${t.padrao_acabamento}</span>` : '-';
                 const dataFmt = t.data_transacao ? t.data_transacao.split('-').reverse().join('/') : '-';
 
-                // Repeated Sales Badge & Metric
                 let revendaBadge = '<span class="text-slate-400 text-[11px]">-</span>';
                 if (t.eh_revenda || t.total_vendas_imovel > 1) {
                     if (t.ordem_venda === 1) {
-                        revendaBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-100 text-purple-800" title="Unidade re-vendida posteriormente"><i class="fa-solid fa-rotate mr-1"></i> 1ª Venda</span>`;
+                        revendaBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200/60" title="Unidade revendida posteriormente"><i class="fa-solid fa-rotate mr-1 text-[9px] text-slate-400"></i> 1ª Venda</span>`;
                     } else {
                         const varPct = t.var_real_pct;
                         const isPos = varPct >= 0;
-                        const cor = isPos ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800';
+                        const cor = isPos ? 'bg-emerald-50 text-emerald-800 border-emerald-200/60' : 'bg-rose-50 text-rose-800 border-rose-200/60';
                         const sinal = isPos ? '+' : '';
                         const dtAnt = t.data_venda_anterior ? t.data_venda_anterior.split('-').reverse().join('/') : '';
                         
                         revendaBadge = `
                             <div>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${cor}" title="Venda anterior em ${dtAnt} por R$ ${(t.valor_real_anterior || 0).toLocaleString('pt-BR')}">
-                                    <i class="fa-solid fa-rotate mr-1"></i> ${t.ordem_venda}ª Venda (${sinal}${varPct}% real)
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border ${cor}" title="Venda anterior em ${dtAnt} por R$ ${(t.valor_real_anterior || 0).toLocaleString('pt-BR')}">
+                                    ${t.ordem_venda}ª Venda (${sinal}${varPct}% real)
                                 </span>
-                                <div class="text-[10px] text-slate-500 mt-0.5">vs. ${dtAnt}</div>
+                                <div class="text-[10px] text-slate-400 mt-0.5">vs. ${dtAnt}</div>
                             </div>
                         `;
                     }
                 }
 
                 tr.innerHTML = `
-                    <td class="py-2.5 px-3 font-bold text-slate-900">${t.unidade || 'Unidade'}</td>
-                    <td class="py-2.5 px-3 text-slate-500 whitespace-nowrap">${dataFmt}</td>
+                    <td class="py-2.5 px-3 font-medium text-slate-900">${t.unidade || 'Unidade'}</td>
+                    <td class="py-2.5 px-3 text-slate-500 font-mono text-[11px] whitespace-nowrap">${dataFmt}</td>
                     <td class="py-2.5 px-3">${revendaBadge}</td>
-                    <td class="py-2.5 px-3">
-                        <div class="font-bold text-slate-900">R$ ${(t.valor_avaliacao_corrigido || 0).toLocaleString('pt-BR')}</div>
-                        <div class="text-[10px] text-slate-400">Nominal: R$ ${(t.valor_nominal || 0).toLocaleString('pt-BR')}</div>
+                    <td class="py-2.5 px-3 text-right">
+                        <div class="font-semibold text-slate-900 font-mono">R$ ${(t.valor_avaliacao_corrigido || 0).toLocaleString('pt-BR')}</div>
+                        <div class="text-[10px] text-slate-400 font-sans">Nominal: R$ ${(t.valor_nominal || 0).toLocaleString('pt-BR')}</div>
                     </td>
-                    <td class="py-2.5 px-3 font-semibold text-blue-600">${t.area_privativa_estimada || 0} m²</td>
-                    <td class="py-2.5 px-3 font-bold text-emerald-600">R$ ${(t.preco_m2_privativo_corrigido || 0).toLocaleString('pt-BR')}</td>
-                    <td class="py-2.5 px-3">${padraoBadge}</td>
+                    <td class="py-2.5 px-3 text-right font-medium text-slate-600 font-mono">${t.area_privativa_estimada || 0} m²</td>
+                    <td class="py-2.5 px-3 text-right font-semibold text-slate-900 font-mono">R$ ${(t.preco_m2_privativo_corrigido || 0).toLocaleString('pt-BR')}</td>
+                    <td class="py-2.5 px-3 text-center">${padraoBadge}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -705,15 +741,15 @@
             currentChartMode = mode;
             ['chartBtnBar', 'chartBtnLine', 'chartBtnScatter'].forEach(id => {
                 const btn = document.getElementById(id);
-                btn.className = 'px-2 py-0.5 rounded text-slate-500 hover:text-slate-800 transition';
+                btn.className = 'px-2.5 py-0.5 rounded text-slate-500 hover:text-slate-900 transition';
             });
 
             if (mode === 'bar') {
-                document.getElementById('chartBtnBar').className = 'px-2 py-0.5 rounded bg-white shadow-sm font-bold text-blue-600 transition';
+                document.getElementById('chartBtnBar').className = 'px-2.5 py-0.5 rounded bg-white shadow-sm font-semibold text-slate-900 transition';
             } else if (mode === 'line') {
-                document.getElementById('chartBtnLine').className = 'px-2 py-0.5 rounded bg-white shadow-sm font-bold text-blue-600 transition';
+                document.getElementById('chartBtnLine').className = 'px-2.5 py-0.5 rounded bg-white shadow-sm font-semibold text-slate-900 transition';
             } else {
-                document.getElementById('chartBtnScatter').className = 'px-2 py-0.5 rounded bg-white shadow-sm font-bold text-blue-600 transition';
+                document.getElementById('chartBtnScatter').className = 'px-2.5 py-0.5 rounded bg-white shadow-sm font-semibold text-slate-900 transition';
             }
 
             renderBuildingChart(currentTransactionsData);
@@ -750,12 +786,12 @@
                     data: {
                         labels: years,
                         datasets: [{
-                            label: 'Média R$/m² Privativo Real',
+                            label: 'Média R$/m²',
                             data: yearAvg,
-                            backgroundColor: 'rgba(37, 99, 235, 0.75)',
-                            hoverBackgroundColor: 'rgba(37, 99, 235, 1)',
-                            borderRadius: 6,
-                            maxBarThickness: 38
+                            backgroundColor: 'rgba(51, 65, 85, 0.85)',
+                            hoverBackgroundColor: '#0f172a',
+                            borderRadius: 4,
+                            maxBarThickness: 34
                         }]
                     },
                     options: {
@@ -764,13 +800,18 @@
                         plugins: {
                             legend: { display: false },
                             tooltip: {
+                                backgroundColor: '#0f172a',
+                                titleFont: { family: 'Inter', size: 12, weight: '600' },
+                                bodyFont: { family: 'Inter', size: 11 },
+                                padding: 10,
+                                cornerRadius: 6,
                                 callbacks: {
                                     title: (items) => `Ano: ${items[0].label}`,
                                     label: (item) => {
                                         const idx = item.dataIndex;
                                         return [
                                             `Preço Médio: R$ ${item.raw.toLocaleString('pt-BR')} / m²`,
-                                            `Volume de Vendas: ${yearCounts[idx]} transações`
+                                            `Volume: ${yearCounts[idx]} transações`
                                         ];
                                     }
                                 }
@@ -779,11 +820,12 @@
                         scales: {
                             x: {
                                 grid: { display: false },
-                                ticks: { font: { size: 11, weight: 'bold' }, color: '#475569' }
+                                ticks: { font: { family: 'Inter', size: 11, weight: '500' }, color: '#64748b' }
                             },
                             y: {
                                 ticks: {
-                                    font: { size: 10 },
+                                    font: { family: 'JetBrains Mono', size: 10 },
+                                    color: '#94a3b8',
                                     callback: (v) => 'R$ ' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v)
                                 },
                                 grid: { color: '#f1f5f9' }
@@ -799,16 +841,16 @@
                         datasets: [{
                             label: 'Média Anual (R$/m²)',
                             data: yearAvg,
-                            borderColor: '#2563eb',
-                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                            borderWidth: 3,
+                            borderColor: '#334155',
+                            backgroundColor: 'rgba(51, 65, 85, 0.06)',
+                            borderWidth: 2,
                             pointBackgroundColor: '#ffffff',
-                            pointBorderColor: '#2563eb',
+                            pointBorderColor: '#334155',
                             pointBorderWidth: 2,
-                            pointRadius: 6,
-                            pointHoverRadius: 8,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
                             fill: true,
-                            tension: 0.3
+                            tension: 0.25
                         }]
                     },
                     options: {
@@ -817,11 +859,16 @@
                         plugins: {
                             legend: { display: false },
                             tooltip: {
+                                backgroundColor: '#0f172a',
+                                titleFont: { family: 'Inter', size: 12, weight: '600' },
+                                bodyFont: { family: 'Inter', size: 11 },
+                                padding: 10,
+                                cornerRadius: 6,
                                 callbacks: {
                                     title: (items) => `Ano: ${items[0].label}`,
                                     label: (item) => [
                                         `Média: R$ ${item.raw.toLocaleString('pt-BR')} / m²`,
-                                        `Vendas: ${yearCounts[item.dataIndex]} unidades`
+                                        `Volume: ${yearCounts[item.dataIndex]} unidades`
                                     ]
                                 }
                             }
@@ -829,11 +876,12 @@
                         scales: {
                             x: {
                                 grid: { display: false },
-                                ticks: { font: { size: 11, weight: 'bold' }, color: '#475569' }
+                                ticks: { font: { family: 'Inter', size: 11, weight: '500' }, color: '#64748b' }
                             },
                             y: {
                                 ticks: {
-                                    font: { size: 10 },
+                                    font: { family: 'JetBrains Mono', size: 10 },
+                                    color: '#94a3b8',
                                     callback: (v) => 'R$ ' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v)
                                 },
                                 grid: { color: '#f1f5f9' }
@@ -854,11 +902,11 @@
                             label: 'Preço / m² Individual',
                             data: dataPoints,
                             showLine: false,
-                            pointBackgroundColor: 'rgba(37, 99, 235, 0.65)',
-                            pointBorderColor: '#1e40af',
+                            pointBackgroundColor: 'rgba(51, 65, 85, 0.65)',
+                            pointBorderColor: '#0f172a',
                             pointBorderWidth: 1,
-                            pointRadius: 4,
-                            pointHoverRadius: 7
+                            pointRadius: 3.5,
+                            pointHoverRadius: 6
                         }]
                     },
                     options: {
@@ -867,6 +915,11 @@
                         plugins: {
                             legend: { display: false },
                             tooltip: {
+                                backgroundColor: '#0f172a',
+                                titleFont: { family: 'Inter', size: 12, weight: '600' },
+                                bodyFont: { family: 'Inter', size: 11 },
+                                padding: 10,
+                                cornerRadius: 6,
                                 callbacks: {
                                     title: (items) => `Data: ${items[0].label}`,
                                     label: (context) => {
@@ -884,7 +937,8 @@
                             x: {
                                 ticks: {
                                     maxTicksLimit: 6,
-                                    font: { size: 10 },
+                                    font: { family: 'JetBrains Mono', size: 10 },
+                                    color: '#64748b',
                                     callback: function(val, index) {
                                         const dateStr = this.getLabelForValue(val);
                                         return dateStr ? dateStr.slice(0, 4) : '';
@@ -894,7 +948,8 @@
                             },
                             y: {
                                 ticks: {
-                                    font: { size: 10 },
+                                    font: { family: 'JetBrains Mono', size: 10 },
+                                    color: '#94a3b8',
                                     callback: (v) => 'R$ ' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v)
                                 },
                                 grid: { color: '#f1f5f9' }
