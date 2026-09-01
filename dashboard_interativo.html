@@ -549,6 +549,9 @@
         function backToHighlights() {
             document.getElementById('buildingView').classList.add('hidden');
             document.getElementById('defaultHighlightsView').classList.remove('hidden');
+            if (window.innerWidth < 768) {
+                setLayout('map');
+            }
         }
 
         function loadMapPoints(bairro = "") {
@@ -569,22 +572,29 @@
                             else if (preco > 5000) cor = '#3b82f6';
 
                             const marker = L.circleMarker([lat, lng], {
-                                radius: Math.min(Math.max(p.total_transacoes * 1.1, 5), 14),
+                                radius: Math.min(Math.max(p.total_transacoes * 1.1, 6), 15),
                                 fillColor: cor,
                                 color: '#ffffff',
                                 weight: 1.5,
                                 fillOpacity: 0.85
                             });
 
+                            const safeAddr = p.endereco_edificio.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            const popupContent = `
+                                <div class="p-1">
+                                    <div class="font-bold text-slate-900 text-xs">${p.endereco_edificio}</div>
+                                    <div class="text-[11px] text-slate-600 mt-0.5">Preço Médio: <b>R$ ${p.m2_privativo_medio.toLocaleString('pt-BR')}/m²</b></div>
+                                    <div class="text-[11px] text-slate-600"><b>${p.total_transacoes} vendas</b> (${p.total_revendas || 0} revendas)</div>
+                                    <button onclick="selectBuilding('${safeAddr}')" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-1.5 px-3 rounded shadow transition">Ver Histórico</button>
+                                </div>
+                            `;
+
+                            marker.bindPopup(popupContent, { closeButton: true });
+                            marker.bindTooltip(`<b>${p.endereco_edificio}</b><br>R$ ${p.m2_privativo_medio.toLocaleString('pt-BR')}/m²`, { direction: 'top' });
+
                             marker.on('click', () => {
                                 selectBuilding(p.endereco_edificio);
                             });
-
-                            marker.bindTooltip(`
-                                <b>${p.endereco_edificio}</b><br>
-                                Preço Médio: R$ ${p.m2_privativo_medio.toLocaleString('pt-BR')}/m²<br>
-                                <b>${p.total_transacoes} vendas</b> (${p.total_revendas || 0} re-vendas)
-                            `, { direction: 'top' });
 
                             markersLayer.addLayer(marker);
                         }
@@ -671,6 +681,11 @@
             document.getElementById('buildingView').classList.remove('hidden');
             document.getElementById('chkOnlyRevendas').checked = false;
             showOnlyRevendas = false;
+
+            // On mobile devices, automatically switch view to show the building details
+            if (window.innerWidth < 768) {
+                setLayout('table');
+            }
 
             fetch(`/api/edificio?endereco=${encodeURIComponent(endereco)}`)
                 .then(r => r.json())
