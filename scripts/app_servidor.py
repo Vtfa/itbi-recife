@@ -309,17 +309,28 @@ class ITBIHandler(BaseHTTPRequestHandler):
         })
 
 def check_database():
+    gz_path = DB_PATH + ".gz"
+    need_decompress = False
+    
     if not os.path.exists(DB_PATH):
-        print(f"[AVISO] Banco de dados não encontrado em {DB_PATH}")
-        return False
-    size = os.path.getsize(DB_PATH)
-    if size < 10000: # Probably a Git LFS pointer file (~130 bytes)
-        print(f"[AVISO] Arquivo {DB_PATH} tem apenas {size} bytes (possível ponteiro Git LFS). Tentando 'git lfs pull'...")
+        need_decompress = True
+    else:
+        size = os.path.getsize(DB_PATH)
+        if size < 10000: # LFS pointer or empty
+            need_decompress = True
+
+    if need_decompress and os.path.exists(gz_path):
+        print(f"[INIT] Descompactando base de dados ({os.path.getsize(gz_path) / (1024*1024):.1f} MB) para {DB_PATH}...")
         try:
-            res = subprocess.run(["git", "lfs", "pull"], cwd=BASE_DIR, capture_output=True, text=True)
-            print(f"[Git LFS] {res.stdout} {res.stderr}")
+            import gzip
+            import shutil
+            with gzip.open(gz_path, 'rb') as f_in:
+                with open(DB_PATH, 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            print(f"[OK] Base de dados descompactada com sucesso ({os.path.getsize(DB_PATH) / (1024*1024):.1f} MB).")
         except Exception as e:
-            print(f"[ERRO Git LFS] Não foi possível executar git lfs pull: {e}")
+            print(f"[ERRO] Falha ao descompactar {gz_path}: {e}")
+
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
