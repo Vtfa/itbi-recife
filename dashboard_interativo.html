@@ -26,26 +26,40 @@
 </head>
 <body class="bg-slate-50 text-slate-800 flex flex-col h-screen overflow-hidden">
 
-    <!-- Top Header -->
-    <header class="bg-slate-900 text-white px-6 py-3 flex items-center justify-between shadow-md z-30 shrink-0">
-        <div>
-            <h1 class="font-bold text-lg leading-tight">Imóveis - Recife</h1>
+    <!-- Top Header (Responsive) -->
+    <header class="bg-slate-900 text-white px-4 md:px-6 py-2.5 md:py-3 flex flex-col md:flex-row items-stretch md:items-center justify-between shadow-md z-30 shrink-0 gap-2.5 md:gap-4">
+        <div class="flex items-center justify-between">
+            <h1 class="font-bold text-base md:text-lg leading-tight">Imóveis - Recife</h1>
+            
+            <!-- Mobile Segmented Layout Switcher -->
+            <div class="flex md:hidden bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-xs">
+                <button onclick="setLayout('map')" id="btnMapOnlyMob" title="Ver apenas o Mapa" class="px-2.5 py-1 rounded text-slate-300">
+                    <i class="fa-solid fa-map"></i>
+                </button>
+                <button onclick="setLayout('split')" id="btnSplitMob" title="Dividido" class="px-2.5 py-1 rounded bg-blue-600 text-white font-bold">
+                    <i class="fa-solid fa-table-columns"></i>
+                </button>
+                <button onclick="setLayout('table')" id="btnTableOnlyMob" title="Ver apenas Tabela" class="px-2.5 py-1 rounded text-slate-300">
+                    <i class="fa-solid fa-table-list"></i>
+                </button>
+            </div>
         </div>
 
         <!-- Search & Filter Controls -->
-        <div class="flex items-center space-x-3 w-1/2 max-w-2xl">
+        <div class="flex items-center space-x-2 md:space-x-3 w-full md:w-1/2 md:max-w-2xl">
             <div class="relative flex-1">
-                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
-                <input id="searchInput" type="text" placeholder="Buscar por rua, avenida ou condomínio..." 
-                       class="w-full bg-slate-800 text-white placeholder-slate-400 text-sm pl-9 pr-4 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 transition shadow-inner">
-                <div id="searchDropdown" class="absolute top-11 left-0 w-full bg-white text-slate-800 rounded-lg shadow-xl border border-slate-200 hidden max-h-80 overflow-y-auto custom-scrollbar z-50"></div>
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 md:top-3 text-slate-400 text-sm"></i>
+                <input id="searchInput" type="text" placeholder="Buscar por rua ou condomínio..." 
+                       class="w-full bg-slate-800 text-white placeholder-slate-400 text-xs md:text-sm pl-8 md:pl-9 pr-3 md:pr-4 py-1.5 md:py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 transition shadow-inner">
+                <div id="searchDropdown" class="absolute top-10 md:top-11 left-0 w-full bg-white text-slate-800 rounded-lg shadow-xl border border-slate-200 hidden max-h-72 overflow-y-auto custom-scrollbar z-50"></div>
             </div>
-            <select id="bairroSelect" class="bg-slate-800 text-white text-sm px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 transition">
+            
+            <select id="bairroSelect" class="bg-slate-800 text-white text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 transition max-w-[130px] sm:max-w-[200px] truncate">
                 <option value="">Todos os Bairros</option>
             </select>
 
-            <!-- Layout Mode Toggles -->
-            <div class="flex bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
+            <!-- Desktop Layout Mode Toggles -->
+            <div class="hidden md:flex bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs shrink-0">
                 <button onclick="setLayout('map')" id="btnMapOnly" title="Ver apenas o Mapa" class="px-2.5 py-1 rounded text-slate-300 hover:text-white transition">
                     <i class="fa-solid fa-map"></i>
                 </button>
@@ -59,200 +73,208 @@
         </div>
     </header>
 
-    <!-- Main Content Layout -->
-    <div class="flex-1 flex overflow-hidden" id="mainContainer">
+    <!-- Main Content Layout (Responsive) -->
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden" id="mainContainer">
         
         <!-- Left: Map Container -->
-        <div id="mapCol" class="w-1/2 h-full relative border-r border-slate-200 transition-all duration-200">
+        <div id="mapCol" class="w-full md:w-1/2 h-1/2 md:h-full relative border-b md:border-b-0 md:border-r border-slate-200 transition-all duration-200">
             <div id="map" class="w-full h-full"></div>
             
-            <!-- Map Legend -->
-            <div class="absolute bottom-4 left-4 bg-white/95 backdrop-blur px-4 py-3 rounded-lg shadow-lg border border-slate-200 text-xs z-[1000] space-y-1.5 pointer-events-auto">
-                <div class="font-bold text-slate-700 mb-1">Preço / m² Privativo</div>
-                <div class="flex items-center space-x-2"><span class="w-3.5 h-3.5 rounded-full bg-[#ef4444] inline-block shadow-sm"></span> <span>> R$ 8.000 / m²</span></div>
-                <div class="flex items-center space-x-2"><span class="w-3.5 h-3.5 rounded-full bg-[#f59e0b] inline-block shadow-sm"></span> <span>R$ 6.500 – R$ 8.000</span></div>
-                <div class="flex items-center space-x-2"><span class="w-3.5 h-3.5 rounded-full bg-[#3b82f6] inline-block shadow-sm"></span> <span>R$ 5.000 – R$ 6.500</span></div>
-                <div class="flex items-center space-x-2"><span class="w-3.5 h-3.5 rounded-full bg-[#10b981] inline-block shadow-sm"></span> <span>< R$ 5.000 / m²</span></div>
+            <!-- Map Legend (Responsive) -->
+            <div class="absolute bottom-3 left-3 bg-white/95 backdrop-blur px-3 py-2 md:px-4 md:py-3 rounded-lg shadow-lg border border-slate-200 text-[11px] md:text-xs z-[1000] space-y-1 pointer-events-auto scale-90 sm:scale-100 origin-bottom-left">
+                <div class="font-bold text-slate-700 mb-0.5">Preço / m² Privativo</div>
+                <div class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#ef4444] inline-block shadow-sm"></span> <span>> R$ 8.000 / m²</span></div>
+                <div class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#f59e0b] inline-block shadow-sm"></span> <span>R$ 6.500 – R$ 8.000</span></div>
+                <div class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#3b82f6] inline-block shadow-sm"></span> <span>R$ 5.000 – R$ 6.500</span></div>
+                <div class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#10b981] inline-block shadow-sm"></span> <span>< R$ 5.000 / m²</span></div>
             </div>
         </div>
 
         <!-- Right: Details & Transactions Panel -->
-        <div id="tableCol" class="w-1/2 h-full flex flex-col bg-white overflow-hidden transition-all duration-200">
+        <div id="tableCol" class="w-full md:w-1/2 h-1/2 md:h-full flex flex-col bg-white overflow-hidden transition-all duration-200">
             
             <!-- Default View: 3 Active Tabs (Edifícios, Re-vendas, Recentes) -->
             <div id="defaultHighlightsView" class="flex-1 flex flex-col overflow-hidden">
                 
-                <!-- Quick Navigation Tabs -->
-                <div class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
-                    <div class="flex space-x-2">
-                        <button onclick="switchHighlightsTab('edificios')" id="tabBtnEdificios" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-sm transition">
+                <!-- Quick Navigation Tabs (Scrollable on mobile) -->
+                <div class="px-3 md:px-5 py-2 md:py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0 gap-2">
+                    <div class="flex space-x-1.5 overflow-x-auto pb-0.5 custom-scrollbar shrink-0">
+                        <button onclick="switchHighlightsTab('edificios')" id="tabBtnEdificios" class="px-2.5 md:px-3 py-1 md:py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-sm transition whitespace-nowrap">
                             <i class="fa-solid fa-city mr-1"></i> Principais Edifícios
                         </button>
-                        <button onclick="switchHighlightsTab('revendas')" id="tabBtnRevendas" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-100 text-purple-800 hover:bg-purple-200 transition">
+                        <button onclick="switchHighlightsTab('revendas')" id="tabBtnRevendas" class="px-2.5 md:px-3 py-1 md:py-1.5 rounded-lg text-xs font-semibold bg-purple-100 text-purple-800 hover:bg-purple-200 transition whitespace-nowrap">
                             <i class="fa-solid fa-rotate mr-1"></i> Imóveis com Revenda
                         </button>
-                        <button onclick="switchHighlightsTab('recentes')" id="tabBtnRecentes" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700 transition">
+                        <button onclick="switchHighlightsTab('recentes')" id="tabBtnRecentes" class="px-2.5 md:px-3 py-1 md:py-1.5 rounded-lg text-xs font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700 transition whitespace-nowrap">
                             <i class="fa-solid fa-clock-rotate-left mr-1"></i> Transações Recentes
                         </button>
                     </div>
-                    <span class="text-xs text-slate-500 font-medium" id="highlightsSubtitle">Selecione um endereço para ver o histórico</span>
+                    <span class="hidden lg:inline text-xs text-slate-500 font-medium truncate" id="highlightsSubtitle">Selecione um endereço</span>
                 </div>
 
                 <!-- Tab 1: Top Edifícios Table -->
                 <div id="tabEdificios" class="flex-1 overflow-y-auto custom-scrollbar">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead class="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
-                            <tr>
-                                <th class="py-2.5 px-4 font-semibold">Endereço / Condomínio</th>
-                                <th class="py-2.5 px-3 font-semibold">Bairro</th>
-                                <th class="py-2.5 px-3 font-semibold text-center">Vendas</th>
-                                <th class="py-2.5 px-3 font-semibold text-center">Revendas</th>
-                                <th class="py-2.5 px-3 font-semibold">Preço / m² Priv.</th>
-                                <th class="py-2.5 px-3 font-semibold">Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody id="topEdificiosTbody" class="divide-y divide-slate-100 text-slate-700">
-                            <!-- Loaded via API -->
-                        </tbody>
-                    </table>
+                    <div class="w-full overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-xs border-collapse min-w-[560px]">
+                            <thead class="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
+                                <tr>
+                                    <th class="py-2.5 px-4 font-semibold">Endereço / Condomínio</th>
+                                    <th class="py-2.5 px-3 font-semibold">Bairro</th>
+                                    <th class="py-2.5 px-3 font-semibold text-center">Vendas</th>
+                                    <th class="py-2.5 px-3 font-semibold text-center">Revendas</th>
+                                    <th class="py-2.5 px-3 font-semibold">Preço / m² Priv.</th>
+                                    <th class="py-2.5 px-3 font-semibold text-center">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topEdificiosTbody" class="divide-y divide-slate-100 text-slate-700">
+                                <!-- Loaded via API -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <!-- Tab 2: Repeated Sales Case Studies Table -->
                 <div id="tabRevendas" class="flex-1 overflow-y-auto custom-scrollbar hidden">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead class="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
-                            <tr>
-                                <th class="py-2.5 px-3 font-semibold">Imóvel / Endereço</th>
-                                <th class="py-2.5 px-3 font-semibold">1ª Venda (IPCA)</th>
-                                <th class="py-2.5 px-3 font-semibold">Revenda (IPCA)</th>
-                                <th class="py-2.5 px-3 font-semibold text-center">Prazo</th>
-                                <th class="py-2.5 px-3 font-semibold">Variação Real</th>
-                                <th class="py-2.5 px-3 font-semibold">Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody id="revendasTbody" class="divide-y divide-slate-100 text-slate-700">
-                            <!-- Loaded via API -->
-                        </tbody>
-                    </table>
+                    <div class="w-full overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-xs border-collapse min-w-[560px]">
+                            <thead class="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
+                                <tr>
+                                    <th class="py-2.5 px-3 font-semibold">Imóvel / Endereço</th>
+                                    <th class="py-2.5 px-3 font-semibold">1ª Venda (IPCA)</th>
+                                    <th class="py-2.5 px-3 font-semibold">Revenda (IPCA)</th>
+                                    <th class="py-2.5 px-3 font-semibold text-center">Prazo</th>
+                                    <th class="py-2.5 px-3 font-semibold">Variação Real</th>
+                                    <th class="py-2.5 px-3 font-semibold text-center">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="revendasTbody" class="divide-y divide-slate-100 text-slate-700">
+                                <!-- Loaded via API -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <!-- Tab 3: Recent Transactions Table -->
                 <div id="tabRecentes" class="flex-1 overflow-y-auto custom-scrollbar hidden">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead class="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
-                            <tr>
-                                <th class="py-2.5 px-4 font-semibold">Endereço / Unidade</th>
-                                <th class="py-2.5 px-3 font-semibold">Data</th>
-                                <th class="py-2.5 px-3 font-semibold">Valor Corrigido</th>
-                                <th class="py-2.5 px-3 font-semibold">Área Priv.</th>
-                                <th class="py-2.5 px-3 font-semibold">Preço / m²</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recentesTbody" class="divide-y divide-slate-100 text-slate-700">
-                            <!-- Loaded via API -->
-                        </tbody>
-                    </table>
+                    <div class="w-full overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-xs border-collapse min-w-[500px]">
+                            <thead class="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
+                                <tr>
+                                    <th class="py-2.5 px-4 font-semibold">Endereço / Unidade</th>
+                                    <th class="py-2.5 px-3 font-semibold">Data</th>
+                                    <th class="py-2.5 px-3 font-semibold">Valor Corrigido</th>
+                                    <th class="py-2.5 px-3 font-semibold">Área Priv.</th>
+                                    <th class="py-2.5 px-3 font-semibold">Preço / m²</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentesTbody" class="divide-y divide-slate-100 text-slate-700">
+                                <!-- Loaded via API -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
             </div>
 
-            <!-- Single Building Detailed View (Loaded on click) -->
+            <!-- Single Building Detailed View (Responsive) -->
             <div id="buildingView" class="flex-1 flex flex-col overflow-hidden hidden">
                 
                 <!-- Building Header & Summary -->
-                <div class="p-5 border-b border-slate-200 bg-slate-50/70 shrink-0">
-                    <div class="flex items-start justify-between">
+                <div class="p-3 md:p-5 border-b border-slate-200 bg-slate-50/70 shrink-0">
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                         <div>
                             <div class="flex items-center space-x-2 mb-1">
                                 <button onclick="backToHighlights()" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-2.5 py-1 rounded-md transition flex items-center space-x-1.5 shadow-sm">
-                                    <i class="fa-solid fa-arrow-left"></i> <span>Voltar à Lista</span>
+                                    <i class="fa-solid fa-arrow-left"></i> <span>Voltar</span>
                                 </button>
                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800" id="bldgBairroBadge">
                                     Bairro
                                 </span>
                             </div>
-                            <h2 class="text-lg font-bold text-slate-900 leading-snug" id="bldgAddress">Nome do Endereço</h2>
+                            <h2 class="text-base md:text-lg font-bold text-slate-900 leading-snug" id="bldgAddress">Nome do Endereço</h2>
                         </div>
-                        <button onclick="exportTableToCSV()" class="text-xs bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold px-3 py-1.5 rounded-lg shadow-sm flex items-center space-x-1.5 transition">
+                        <button onclick="exportTableToCSV()" class="self-start sm:self-auto text-xs bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold px-2.5 md:px-3 py-1 md:py-1.5 rounded-lg shadow-sm flex items-center space-x-1.5 transition shrink-0">
                             <i class="fa-solid fa-file-arrow-down text-emerald-600"></i>
                             <span>Exportar CSV</span>
                         </button>
                     </div>
 
-                    <!-- Metrics Cards -->
-                    <div class="grid grid-cols-4 gap-3 mt-3">
-                        <div class="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                    <!-- Metrics Cards (Responsive Grid 2x2 on phone, 4x1 on desktop) -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3 mt-2.5 md:mt-3">
+                        <div class="bg-white p-2 md:p-2.5 rounded-lg border border-slate-200 shadow-sm">
                             <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Preço / m² Médio</div>
-                            <div class="text-base font-bold text-blue-600" id="bldgM2Medio">R$ 0</div>
+                            <div class="text-sm md:text-base font-bold text-blue-600" id="bldgM2Medio">R$ 0</div>
                         </div>
-                        <div class="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                        <div class="bg-white p-2 md:p-2.5 rounded-lg border border-slate-200 shadow-sm">
                             <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Valor Médio (IPCA)</div>
-                            <div class="text-base font-bold text-slate-800" id="bldgValorMedio">R$ 0</div>
+                            <div class="text-sm md:text-base font-bold text-slate-800" id="bldgValorMedio">R$ 0</div>
                         </div>
-                        <div class="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                        <div class="bg-white p-2 md:p-2.5 rounded-lg border border-slate-200 shadow-sm">
                             <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Área Priv. Média</div>
-                            <div class="text-base font-bold text-slate-800" id="bldgAreaMedia">0 m²</div>
+                            <div class="text-sm md:text-base font-bold text-slate-800" id="bldgAreaMedia">0 m²</div>
                         </div>
-                        <div class="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                        <div class="bg-white p-2 md:p-2.5 rounded-lg border border-slate-200 shadow-sm">
                             <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Total Vendas</div>
-                            <div class="text-base font-bold text-emerald-600" id="bldgTotalTransacoes">0</div>
+                            <div class="text-sm md:text-base font-bold text-emerald-600" id="bldgTotalTransacoes">0</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- History Chart Section -->
-                <div class="px-5 py-3 border-b border-slate-200 bg-white shrink-0">
-                    <div class="flex items-center justify-between mb-2">
+                <div class="px-3 md:px-5 py-2 md:py-3 border-b border-slate-200 bg-white shrink-0">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-2">
                         <div class="flex items-center space-x-2">
                             <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">
                                 Evolução do Preço / m²
                             </span>
-                            <span class="text-[11px] text-slate-400">(Média anual corrigida pelo IPCA)</span>
+                            <span class="text-[10px] md:text-[11px] text-slate-400">(Média corrigida pelo IPCA)</span>
                         </div>
                         <!-- Chart Mode Buttons -->
-                        <div class="flex bg-slate-100 p-0.5 rounded-lg text-[11px]">
-                            <button onclick="setChartMode('bar')" id="chartBtnBar" class="px-2 py-0.5 rounded bg-white shadow-sm font-bold text-blue-600 transition">Barras Anuais</button>
-                            <button onclick="setChartMode('line')" id="chartBtnLine" class="px-2 py-0.5 rounded text-slate-500 hover:text-slate-800 transition">Linha de Tendência</button>
-                            <button onclick="setChartMode('scatter')" id="chartBtnScatter" class="px-2 py-0.5 rounded text-slate-500 hover:text-slate-800 transition">Vendas Individuais</button>
+                        <div class="flex bg-slate-100 p-0.5 rounded-lg text-[10px] md:text-[11px] self-start sm:self-auto overflow-x-auto">
+                            <button onclick="setChartMode('bar')" id="chartBtnBar" class="px-2 py-0.5 rounded bg-white shadow-sm font-bold text-blue-600 transition whitespace-nowrap">Barras</button>
+                            <button onclick="setChartMode('line')" id="chartBtnLine" class="px-2 py-0.5 rounded text-slate-500 hover:text-slate-800 transition whitespace-nowrap">Tendência</button>
+                            <button onclick="setChartMode('scatter')" id="chartBtnScatter" class="px-2 py-0.5 rounded text-slate-500 hover:text-slate-800 transition whitespace-nowrap">Individuais</button>
                         </div>
                     </div>
                     
-                    <div class="h-36 w-full relative">
+                    <div class="h-32 md:h-36 w-full relative">
                         <canvas id="bldgChart"></canvas>
                     </div>
                 </div>
 
                 <!-- Transaction Table Header with Revendas Filter Toggle -->
-                <div class="px-5 py-2.5 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between shrink-0">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-xs font-bold text-slate-700 uppercase">Unidades Transacionadas</span>
+                <div class="px-3 md:px-5 py-2 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between shrink-0">
+                    <div class="flex items-center space-x-2 md:space-x-3">
+                        <span class="text-[11px] md:text-xs font-bold text-slate-700 uppercase">Unidades</span>
                         <!-- Filter Checkbox for Repeated Sales -->
-                        <label class="inline-flex items-center space-x-1.5 text-xs text-purple-800 font-semibold bg-purple-100/80 px-2.5 py-0.5 rounded-md cursor-pointer hover:bg-purple-200 transition">
-                            <input type="checkbox" id="chkOnlyRevendas" onchange="toggleOnlyRevendasFilter()" class="rounded text-purple-600 focus:ring-purple-500">
-                            <span><i class="fa-solid fa-rotate text-purple-600"></i> Apenas revendas</span>
+                        <label class="inline-flex items-center space-x-1 text-[11px] md:text-xs text-purple-800 font-semibold bg-purple-100/80 px-2 py-0.5 rounded-md cursor-pointer hover:bg-purple-200 transition">
+                            <input type="checkbox" id="chkOnlyRevendas" onchange="toggleOnlyRevendasFilter()" class="rounded text-purple-600 focus:ring-purple-500 text-xs">
+                            <span>Apenas revendas</span>
                         </label>
                     </div>
-                    <span class="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200" id="tableCountBadge">0 transações</span>
+                    <span class="text-[11px] md:text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200" id="tableCountBadge">0 transações</span>
                 </div>
 
-                <!-- Transactions Table (Scrollable) -->
+                <!-- Transactions Table (Scrollable with min-width) -->
                 <div class="flex-1 overflow-y-auto custom-scrollbar p-0">
-                    <table class="w-full text-left text-xs border-collapse" id="transactionsTable">
-                        <thead class="bg-slate-50 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
-                            <tr>
-                                <th class="py-2.5 px-3 font-semibold">Unidade / Apto</th>
-                                <th class="py-2.5 px-3 font-semibold">Data</th>
-                                <th class="py-2.5 px-3 font-semibold">Histórico de Revenda</th>
-                                <th class="py-2.5 px-3 font-semibold">Valor Corrigido (IPCA)</th>
-                                <th class="py-2.5 px-3 font-semibold">Área Priv.</th>
-                                <th class="py-2.5 px-3 font-semibold">Preço / m² Priv.</th>
-                                <th class="py-2.5 px-3 font-semibold">Padrão</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transactionsTbody" class="divide-y divide-slate-100 text-slate-700">
-                            <!-- Rows loaded dynamically -->
-                        </tbody>
-                    </table>
+                    <div class="w-full overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-xs border-collapse min-w-[620px]" id="transactionsTable">
+                            <thead class="bg-slate-50 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
+                                <tr>
+                                    <th class="py-2.5 px-3 font-semibold">Unidade / Apto</th>
+                                    <th class="py-2.5 px-3 font-semibold">Data</th>
+                                    <th class="py-2.5 px-3 font-semibold">Histórico de Revenda</th>
+                                    <th class="py-2.5 px-3 font-semibold">Valor Corrigido (IPCA)</th>
+                                    <th class="py-2.5 px-3 font-semibold">Área Priv.</th>
+                                    <th class="py-2.5 px-3 font-semibold">Preço / m² Priv.</th>
+                                    <th class="py-2.5 px-3 font-semibold">Padrão</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsTbody" class="divide-y divide-slate-100 text-slate-700">
+                                <!-- Rows loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
             </div>
@@ -268,6 +290,7 @@
         let currentBuildingAddress = "";
         let currentChartMode = 'bar';
         let showOnlyRevendas = false;
+        let currentLayout = 'split';
 
         document.addEventListener('DOMContentLoaded', () => {
             initMap();
@@ -275,34 +298,67 @@
             loadMapPoints();
             loadHighlights();
             setupSearch();
+
+            // Set initial layout based on screen width
+            if (window.innerWidth < 768) {
+                setLayout('map');
+            } else {
+                setLayout('split');
+            }
+
+            window.addEventListener('resize', () => {
+                setLayout(currentLayout);
+            });
         });
 
         function setLayout(mode) {
+            currentLayout = mode;
             const mapCol = document.getElementById('mapCol');
             const tableCol = document.getElementById('tableCol');
-            const btnMap = document.getElementById('btnMapOnly');
-            const btnSplit = document.getElementById('btnSplit');
-            const btnTable = document.getElementById('btnTableOnly');
+            const isMobile = window.innerWidth < 768;
 
-            [btnMap, btnSplit, btnTable].forEach(b => {
+            const allBtns = [
+                document.getElementById('btnMapOnly'),
+                document.getElementById('btnSplit'),
+                document.getElementById('btnTableOnly'),
+                document.getElementById('btnMapOnlyMob'),
+                document.getElementById('btnSplitMob'),
+                document.getElementById('btnTableOnlyMob')
+            ].filter(Boolean);
+
+            allBtns.forEach(b => {
                 b.className = 'px-2.5 py-1 rounded text-slate-300 hover:text-white transition';
             });
 
             if (mode === 'map') {
                 mapCol.className = 'w-full h-full relative border-r border-slate-200 transition-all duration-200';
                 tableCol.className = 'hidden';
-                btnMap.className = 'px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition';
+                ['btnMapOnly', 'btnMapOnlyMob'].forEach(id => {
+                    const b = document.getElementById(id);
+                    if (b) b.className = 'px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition';
+                });
             } else if (mode === 'table') {
                 mapCol.className = 'hidden';
                 tableCol.className = 'w-full h-full flex flex-col bg-white overflow-hidden transition-all duration-200';
-                btnTable.className = 'px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition';
+                ['btnTableOnly', 'btnTableOnlyMob'].forEach(id => {
+                    const b = document.getElementById(id);
+                    if (b) b.className = 'px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition';
+                });
             } else {
-                mapCol.className = 'w-1/2 h-full relative border-r border-slate-200 transition-all duration-200';
-                tableCol.className = 'w-1/2 h-full flex flex-col bg-white overflow-hidden transition-all duration-200';
-                btnSplit.className = 'px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition';
+                if (isMobile) {
+                    mapCol.className = 'w-full h-1/2 relative border-b border-slate-200 transition-all duration-200';
+                    tableCol.className = 'w-full h-1/2 flex flex-col bg-white overflow-hidden transition-all duration-200';
+                } else {
+                    mapCol.className = 'w-1/2 h-full relative border-r border-slate-200 transition-all duration-200';
+                    tableCol.className = 'w-1/2 h-full flex flex-col bg-white overflow-hidden transition-all duration-200';
+                }
+                ['btnSplit', 'btnSplitMob'].forEach(id => {
+                    const b = document.getElementById(id);
+                    if (b) b.className = 'px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition';
+                });
             }
 
-            setTimeout(() => { map.invalidateSize(); }, 250);
+            setTimeout(() => { if (map) map.invalidateSize(); }, 250);
         }
 
         function initMap() {
