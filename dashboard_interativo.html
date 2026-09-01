@@ -221,20 +221,23 @@
                 <!-- Building Navigation Sub-Tabs -->
                 <div class="px-3 md:px-4 py-1.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
                     <div class="flex space-x-1 bg-slate-200/80 p-0.5 rounded-lg text-xs">
-                        <button onclick="switchBuildingSubTab('unidades')" id="bldgTabBtnUnidades" class="px-3 py-1 rounded-md font-bold bg-blue-600 text-white shadow-sm transition">
+                        <button onclick="switchBuildingSubTab('unidades')" id="bldgTabBtnUnidades" class="px-2.5 md:px-3 py-1 rounded-md font-bold bg-blue-600 text-white shadow-sm transition whitespace-nowrap">
                             <i class="fa-solid fa-list-check mr-1"></i> Unidades Transacionadas
                         </button>
-                        <button onclick="switchBuildingSubTab('grafico')" id="bldgTabBtnGrafico" class="px-3 py-1 rounded-md font-medium text-slate-700 hover:text-slate-900 transition">
+                        <button onclick="switchBuildingSubTab('grafico')" id="bldgTabBtnGrafico" class="px-2.5 md:px-3 py-1 rounded-md font-medium text-slate-700 hover:text-slate-900 transition whitespace-nowrap">
                             <i class="fa-solid fa-chart-line mr-1"></i> Evolução / Gráfico
                         </button>
                     </div>
 
-                    <!-- Filter Checkbox for Repeated Sales -->
-                    <label class="inline-flex items-center space-x-1 text-[11px] text-purple-800 font-semibold bg-purple-100/80 px-2 py-1 rounded-md cursor-pointer hover:bg-purple-200 transition">
-                        <input type="checkbox" id="chkOnlyRevendas" onchange="toggleOnlyRevendasFilter()" class="rounded text-purple-600 focus:ring-purple-500 text-xs">
-                        <span class="hidden sm:inline">Apenas revendas</span>
-                        <span class="sm:hidden">Revendas</span>
-                    </label>
+                    <div class="flex items-center space-x-2">
+                        <!-- Filter Checkbox for Repeated Sales -->
+                        <label class="inline-flex items-center space-x-1 text-[11px] text-purple-800 font-semibold bg-purple-100/80 px-2 py-1 rounded-md cursor-pointer hover:bg-purple-200 transition">
+                            <input type="checkbox" id="chkOnlyRevendas" onchange="toggleOnlyRevendasFilter()" class="rounded text-purple-600 focus:ring-purple-500 text-xs">
+                            <span class="hidden sm:inline">Apenas revendas</span>
+                            <span class="sm:hidden">Revendas</span>
+                        </label>
+                        <span id="tableCountBadge" class="hidden sm:inline text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">0 transações</span>
+                    </div>
                 </div>
 
                 <!-- Section 1: Unidades Table (Takes 100% of remaining height) -->
@@ -749,7 +752,10 @@
                 filtered = filtered.filter(t => t.eh_revenda || t.total_vendas_imovel > 1);
             }
 
-            document.getElementById('tableCountBadge').textContent = `${filtered.length} transações exibidas`;
+            const badge = document.getElementById('tableCountBadge');
+            if (badge) {
+                badge.textContent = `${filtered.length} transações`;
+            }
 
             filtered.forEach(t => {
                 const tr = document.createElement('tr');
