@@ -176,103 +176,106 @@
 
             </div>
 
-            <!-- Single Building Detailed View (Unified Natural Scroll with Sticky Header) -->
-            <div id="buildingView" class="flex-1 flex flex-col overflow-y-auto custom-scrollbar hidden">
+            <!-- Single Building Detailed View -->
+            <div id="buildingView" class="flex-1 flex flex-col overflow-hidden hidden">
                 
-                <!-- Sticky Building Header -->
-                <div class="p-3 md:p-4 border-b border-slate-200 bg-white/95 backdrop-blur sticky top-0 z-20 shrink-0 shadow-sm">
-                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
-                        <div>
-                            <div class="flex items-center space-x-2 mb-1">
-                                <button onclick="backToHighlights()" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold px-2.5 py-1 rounded-md transition flex items-center space-x-1.5 shadow-sm">
-                                    <i class="fa-solid fa-arrow-left"></i> <span>Voltar</span>
-                                </button>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800" id="bldgBairroBadge">
-                                    Bairro
-                                </span>
+                <!-- Building Top Bar (Compact & Sticky) -->
+                <div class="p-3 md:p-4 border-b border-slate-200 bg-white shrink-0 shadow-sm">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center space-x-2 min-w-0">
+                            <button onclick="backToHighlights()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-2.5 py-1.5 rounded-md transition flex items-center space-x-1 shrink-0 border border-slate-300">
+                                <i class="fa-solid fa-arrow-left"></i> <span>Voltar</span>
+                            </button>
+                            <div class="min-w-0">
+                                <h2 class="text-sm md:text-base font-bold text-slate-900 truncate leading-tight" id="bldgAddress">Nome do Endereço</h2>
+                                <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200" id="bldgBairroBadge">Bairro</span>
                             </div>
-                            <h2 class="text-base md:text-lg font-bold text-slate-900 leading-snug" id="bldgAddress">Nome do Endereço</h2>
                         </div>
-                        <button onclick="exportTableToCSV()" class="self-start sm:self-auto text-xs bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold px-2.5 md:px-3 py-1 md:py-1.5 rounded-lg shadow-sm flex items-center space-x-1.5 transition shrink-0">
+                        <button onclick="exportTableToCSV()" class="text-xs bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold px-2.5 py-1 rounded-lg shadow-sm flex items-center space-x-1 transition shrink-0">
                             <i class="fa-solid fa-file-arrow-down text-emerald-600"></i>
-                            <span>Exportar CSV</span>
+                            <span class="hidden sm:inline">Exportar CSV</span>
                         </button>
                     </div>
 
-                    <!-- Metrics Cards (Responsive Grid 2x2 on phone, 4x1 on desktop) -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3 mt-2.5">
-                        <div class="bg-slate-50 p-2 md:p-2.5 rounded-lg border border-slate-200 shadow-sm">
-                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Preço / m² Médio</div>
-                            <div class="text-sm md:text-base font-bold text-blue-600" id="bldgM2Medio">R$ 0</div>
+                    <!-- Metrics Badges (Horizontal Flow) -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 md:gap-2 mt-2.5">
+                        <div class="bg-slate-50 px-2.5 py-1.5 rounded border border-slate-200">
+                            <div class="text-[9px] font-bold text-slate-400 uppercase">Preço / m² Médio</div>
+                            <div class="text-xs md:text-sm font-bold text-blue-600" id="bldgM2Medio">R$ 0</div>
                         </div>
-                        <div class="bg-slate-50 p-2 md:p-2.5 rounded-lg border border-slate-200 shadow-sm">
-                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Valor Médio (IPCA)</div>
-                            <div class="text-sm md:text-base font-bold text-slate-800" id="bldgValorMedio">R$ 0</div>
+                        <div class="bg-slate-50 px-2.5 py-1.5 rounded border border-slate-200">
+                            <div class="text-[9px] font-bold text-slate-400 uppercase">Ticket Médio (IPCA)</div>
+                            <div class="text-xs md:text-sm font-bold text-slate-800" id="bldgValorMedio">R$ 0</div>
                         </div>
-                        <div class="bg-slate-50 p-2 md:p-2.5 rounded-lg border border-slate-200 shadow-sm">
-                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Área Priv. Média</div>
-                            <div class="text-sm md:text-base font-bold text-slate-800" id="bldgAreaMedia">0 m²</div>
+                        <div class="bg-slate-50 px-2.5 py-1.5 rounded border border-slate-200">
+                            <div class="text-[9px] font-bold text-slate-400 uppercase">Área Priv. Média</div>
+                            <div class="text-xs md:text-sm font-bold text-slate-800" id="bldgAreaMedia">0 m²</div>
                         </div>
-                        <div class="bg-slate-50 p-2 md:p-2.5 rounded-lg border border-slate-200 shadow-sm">
-                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Total Vendas</div>
-                            <div class="text-sm md:text-base font-bold text-emerald-600" id="bldgTotalTransacoes">0</div>
+                        <div class="bg-slate-50 px-2.5 py-1.5 rounded border border-slate-200">
+                            <div class="text-[9px] font-bold text-slate-400 uppercase">Transações</div>
+                            <div class="text-xs md:text-sm font-bold text-emerald-600" id="bldgTotalTransacoes">0</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- History Chart Section (Collapsible) -->
-                <div class="px-3 md:px-5 py-2.5 border-b border-slate-200 bg-white shrink-0" id="bldgChartContainer">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-2">
-                        <div class="flex items-center space-x-2">
+                <!-- Building Navigation Sub-Tabs -->
+                <div class="px-3 md:px-4 py-1.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
+                    <div class="flex space-x-1 bg-slate-200/80 p-0.5 rounded-lg text-xs">
+                        <button onclick="switchBuildingSubTab('unidades')" id="bldgTabBtnUnidades" class="px-3 py-1 rounded-md font-bold bg-blue-600 text-white shadow-sm transition">
+                            <i class="fa-solid fa-list-check mr-1"></i> Unidades Transacionadas
+                        </button>
+                        <button onclick="switchBuildingSubTab('grafico')" id="bldgTabBtnGrafico" class="px-3 py-1 rounded-md font-medium text-slate-700 hover:text-slate-900 transition">
+                            <i class="fa-solid fa-chart-line mr-1"></i> Evolução / Gráfico
+                        </button>
+                    </div>
+
+                    <!-- Filter Checkbox for Repeated Sales -->
+                    <label class="inline-flex items-center space-x-1 text-[11px] text-purple-800 font-semibold bg-purple-100/80 px-2 py-1 rounded-md cursor-pointer hover:bg-purple-200 transition">
+                        <input type="checkbox" id="chkOnlyRevendas" onchange="toggleOnlyRevendasFilter()" class="rounded text-purple-600 focus:ring-purple-500 text-xs">
+                        <span class="hidden sm:inline">Apenas revendas</span>
+                        <span class="sm:hidden">Revendas</span>
+                    </label>
+                </div>
+
+                <!-- Section 1: Unidades Table (Takes 100% of remaining height) -->
+                <div id="bldgSubTabUnidades" class="flex-1 overflow-y-auto custom-scrollbar p-0 bg-white">
+                    <div class="w-full overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-xs border-collapse min-w-[620px]" id="transactionsTable">
+                            <thead class="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-200 z-10">
+                                <tr>
+                                    <th class="py-2.5 px-3 font-semibold">Unidade / Apto</th>
+                                    <th class="py-2.5 px-3 font-semibold">Data</th>
+                                    <th class="py-2.5 px-3 font-semibold">Histórico de Revenda</th>
+                                    <th class="py-2.5 px-3 font-semibold text-right">Valor Corrigido (IPCA)</th>
+                                    <th class="py-2.5 px-3 font-semibold text-right">Área Priv.</th>
+                                    <th class="py-2.5 px-3 font-semibold text-right">Preço / m² Priv.</th>
+                                    <th class="py-2.5 px-3 font-semibold text-center">Padrão</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsTbody" class="divide-y divide-slate-100 text-slate-700">
+                                <!-- Rows loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Section 2: Chart Section (Visible when user selects Gráfico tab) -->
+                <div id="bldgSubTabGrafico" class="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 bg-white hidden">
+                    <div class="max-w-2xl mx-auto space-y-4">
+                        <div class="flex items-center justify-between">
                             <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                Evolução do Preço / m²
+                                Evolução do Preço / m² (IPCA)
                             </span>
-                            <button onclick="toggleChartVisibility()" id="btnToggleChart" class="text-[10px] text-blue-600 hover:text-blue-800 font-semibold underline">Ocultar</button>
+                            <div class="flex bg-slate-100 p-0.5 rounded-lg text-xs">
+                                <button onclick="setChartMode('bar')" id="chartBtnBar" class="px-2.5 py-1 rounded bg-white shadow-sm font-bold text-blue-600 transition">Barras</button>
+                                <button onclick="setChartMode('line')" id="chartBtnLine" class="px-2.5 py-1 rounded text-slate-500 hover:text-slate-800 transition">Tendência</button>
+                                <button onclick="setChartMode('scatter')" id="chartBtnScatter" class="px-2.5 py-1 rounded text-slate-500 hover:text-slate-800 transition">Individuais</button>
+                            </div>
                         </div>
-                        <!-- Chart Mode Buttons -->
-                        <div class="flex bg-slate-100 p-0.5 rounded-lg text-[10px] md:text-[11px] self-start sm:self-auto overflow-x-auto" id="chartModeControls">
-                            <button onclick="setChartMode('bar')" id="chartBtnBar" class="px-2 py-0.5 rounded bg-white shadow-sm font-bold text-blue-600 transition whitespace-nowrap">Barras</button>
-                            <button onclick="setChartMode('line')" id="chartBtnLine" class="px-2 py-0.5 rounded text-slate-500 hover:text-slate-800 transition whitespace-nowrap">Tendência</button>
-                            <button onclick="setChartMode('scatter')" id="chartBtnScatter" class="px-2 py-0.5 rounded text-slate-500 hover:text-slate-800 transition whitespace-nowrap">Individuais</button>
+                        <div class="h-64 md:h-72 w-full relative bg-slate-50 p-3 rounded-lg border border-slate-200">
+                            <canvas id="bldgChart"></canvas>
                         </div>
                     </div>
-                    
-                    <div class="h-32 md:h-36 w-full relative" id="bldgCanvasWrapper">
-                        <canvas id="bldgChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Transaction Table Header with Revendas Filter Toggle -->
-                <div class="px-3 md:px-5 py-2.5 bg-slate-100 border-b border-slate-200 flex items-center justify-between shrink-0 sticky top-[138px] sm:top-[128px] z-10">
-                    <div class="flex items-center space-x-2 md:space-x-3">
-                        <span class="text-xs font-bold text-slate-800 uppercase">Unidades Transacionadas</span>
-                        <!-- Filter Checkbox for Repeated Sales -->
-                        <label class="inline-flex items-center space-x-1 text-[11px] md:text-xs text-purple-800 font-semibold bg-purple-100/80 px-2 py-0.5 rounded-md cursor-pointer hover:bg-purple-200 transition">
-                            <input type="checkbox" id="chkOnlyRevendas" onchange="toggleOnlyRevendasFilter()" class="rounded text-purple-600 focus:ring-purple-500 text-xs">
-                            <span>Apenas revendas</span>
-                        </label>
-                    </div>
-                    <span class="text-[11px] md:text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200" id="tableCountBadge">0 transações</span>
-                </div>
-
-                <!-- Transactions Table (Scrollable full view) -->
-                <div class="w-full overflow-x-auto custom-scrollbar p-0 bg-white">
-                    <table class="w-full text-left text-xs border-collapse min-w-[620px]" id="transactionsTable">
-                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
-                            <tr>
-                                <th class="py-2.5 px-3 font-semibold">Unidade / Apto</th>
-                                <th class="py-2.5 px-3 font-semibold">Data</th>
-                                <th class="py-2.5 px-3 font-semibold">Histórico de Revenda</th>
-                                <th class="py-2.5 px-3 font-semibold">Valor Corrigido (IPCA)</th>
-                                <th class="py-2.5 px-3 font-semibold">Área Priv.</th>
-                                <th class="py-2.5 px-3 font-semibold">Preço / m² Priv.</th>
-                                <th class="py-2.5 px-3 font-semibold">Padrão</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transactionsTbody" class="divide-y divide-slate-100 text-slate-700">
-                            <!-- Rows loaded dynamically -->
-                        </tbody>
-                    </table>
                 </div>
 
             </div>
@@ -678,6 +681,28 @@
             });
         }
 
+        function switchBuildingSubTab(tab) {
+            const tabUnidades = document.getElementById('bldgSubTabUnidades');
+            const tabGrafico = document.getElementById('bldgSubTabGrafico');
+            const btnUnidades = document.getElementById('bldgTabBtnUnidades');
+            const btnGrafico = document.getElementById('bldgTabBtnGrafico');
+
+            if (tab === 'grafico') {
+                tabUnidades.classList.add('hidden');
+                tabGrafico.classList.remove('hidden');
+                btnGrafico.className = 'px-3 py-1 rounded-md font-bold bg-blue-600 text-white shadow-sm transition';
+                btnUnidades.className = 'px-3 py-1 rounded-md font-medium text-slate-700 hover:text-slate-900 transition';
+                if (currentTransactionsData && currentTransactionsData.length > 0) {
+                    setTimeout(() => { renderBuildingChart(currentTransactionsData); }, 100);
+                }
+            } else {
+                tabGrafico.classList.add('hidden');
+                tabUnidades.classList.remove('hidden');
+                btnUnidades.className = 'px-3 py-1 rounded-md font-bold bg-blue-600 text-white shadow-sm transition';
+                btnGrafico.className = 'px-3 py-1 rounded-md font-medium text-slate-700 hover:text-slate-900 transition';
+            }
+        }
+
         function toggleOnlyRevendasFilter() {
             showOnlyRevendas = document.getElementById('chkOnlyRevendas').checked;
             renderBuildingTransactions();
@@ -689,6 +714,7 @@
             document.getElementById('buildingView').classList.remove('hidden');
             document.getElementById('chkOnlyRevendas').checked = false;
             showOnlyRevendas = false;
+            switchBuildingSubTab('unidades');
 
             // On mobile devices, automatically switch view to show the building details
             if (window.innerWidth < 768) {
