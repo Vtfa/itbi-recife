@@ -386,13 +386,59 @@
                 .then(r => r.json())
                 .then(geoData => {
                     geojsonLayer = L.geoJSON(geoData, {
-                        interactive: false,
-                        style: {
-                            color: '#3b82f6',
-                            weight: 1.2,
-                            opacity: 0.35,
-                            fillColor: '#93c5fd',
-                            fillOpacity: 0.04
+                        style: function(feature) {
+                            return {
+                                color: '#1e40af',
+                                weight: 1.8,
+                                opacity: 0.80,
+                                fillColor: '#3b82f6',
+                                fillOpacity: 0.10
+                            };
+                        },
+                        onEachFeature: function(feature, layer) {
+                            const nomeBairro = feature.properties?.EBAIRRNOMEOF || feature.properties?.EBAIRRNOME || feature.properties?.bairro || feature.properties?.nome || '';
+                            if (nomeBairro) {
+                                layer.bindTooltip(`<b>${nomeBairro}</b>`, {
+                                    sticky: true,
+                                    direction: 'top'
+                                });
+                            }
+                            layer.on({
+                                mouseover: function(e) {
+                                    const l = e.target;
+                                    l.setStyle({
+                                        weight: 2.8,
+                                        color: '#0f172a',
+                                        fillOpacity: 0.20
+                                    });
+                                },
+                                mouseout: function(e) {
+                                    const currentSelected = document.getElementById('bairroSelect')?.value || '';
+                                    if (currentSelected && nomeBairro && currentSelected.toLowerCase() === nomeBairro.toLowerCase()) {
+                                        e.target.setStyle({
+                                            weight: 3.2,
+                                            color: '#1e3a8a',
+                                            fillOpacity: 0.25
+                                        });
+                                    } else {
+                                        geojsonLayer.resetStyle(e.target);
+                                    }
+                                },
+                                click: function(e) {
+                                    if (nomeBairro) {
+                                        const select = document.getElementById('bairroSelect');
+                                        if (select) {
+                                            for (let i = 0; i < select.options.length; i++) {
+                                                if (select.options[i].value.toLowerCase() === nomeBairro.toLowerCase()) {
+                                                    select.selectedIndex = i;
+                                                    filterByBairro(select.options[i].value);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            });
                         }
                     }).addTo(map);
                 })
@@ -619,11 +665,18 @@
         function filterByBairro(bairro) {
             loadMapPoints(bairro);
             loadHighlights(bairro);
-            if (bairro && geojsonLayer) {
+            if (geojsonLayer) {
                 geojsonLayer.eachLayer(layer => {
-                    const name = layer.feature?.properties?.bairro || layer.feature?.properties?.nome;
-                    if (name && name.toLowerCase() === bairro.toLowerCase()) {
+                    const name = layer.feature?.properties?.EBAIRRNOMEOF || layer.feature?.properties?.EBAIRRNOME || layer.feature?.properties?.bairro || layer.feature?.properties?.nome || '';
+                    if (bairro && name && name.toLowerCase() === bairro.toLowerCase()) {
                         map.fitBounds(layer.getBounds(), { padding: [20, 20] });
+                        layer.setStyle({
+                            weight: 3.2,
+                            color: '#1e3a8a',
+                            fillOpacity: 0.25
+                        });
+                    } else {
+                        geojsonLayer.resetStyle(layer);
                     }
                 });
             }
