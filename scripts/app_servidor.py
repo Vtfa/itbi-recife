@@ -2,14 +2,17 @@ import os
 import json
 import sqlite3
 import urllib.parse
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import webbrowser
+import traceback
+import subprocess
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 import threading
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "data", "processed", "itbi_recife.db")
 GEOJSON_PATH = os.path.join(BASE_DIR, "data", "raw", "bairros_recife.geojson")
 HTML_INDEX = os.path.join(BASE_DIR, "dashboard_interativo.html")
+
+_GEOJSON_CACHE = None
 
 class ITBIHandler(BaseHTTPRequestHandler):
     def get_db(self):
@@ -18,26 +21,30 @@ class ITBIHandler(BaseHTTPRequestHandler):
         return conn
 
     def do_GET(self):
-        parsed = urllib.parse.urlparse(self.path)
-        path = parsed.path
-        query = urllib.parse.parse_qs(parsed.query)
-        
-        if path == '/' or path == '/index.html':
-            self.serve_html()
-        elif path == '/api/geojson':
-            self.serve_geojson()
-        elif path == '/api/bairros':
-            self.handle_bairros()
-        elif path == '/api/destaques':
-            self.handle_destaques(query)
-        elif path == '/api/busca':
-            self.handle_busca(query)
-        elif path == '/api/edificio':
-            self.handle_edificio(query)
-        elif path == '/api/mapa_pontos':
-            self.handle_mapa_pontos(query)
-        else:
-            self.send_error(404, "Not Found")
+        try:
+            parsed = urllib.parse.urlparse(self.path)
+            path = parsed.path
+            query = urllib.parse.parse_qs(parsed.query)
+            
+            if path == '/' or path == '/index.html':
+                self.serve_html()
+            elif path == '/api/geojson':
+                self.serve_geojson()
+            elif path == '/api/bairros':
+                self.handle_bairros()
+            elif path == '/api/destaques':
+                self.handle_destaques(query)
+            elif path == '/api/busca':
+                self.handle_busca(query)
+            elif path == '/api/edificio':
+                self.handle_edificio(query)
+            elif path == '/api/mapa_pontos':
+                self.handle_mapa_pontos(query)
+            else:
+                self.send_error(404, "Not Found")
+        except Exception as e:
+            traceback.print_exc()
+            self.send_json({"error": str(e)}, status=500)
 
     def serve_html(self):
         if not os.path.exists(HTML_INDEX):
@@ -52,20 +59,23 @@ class ITBIHandler(BaseHTTPRequestHandler):
         self.wfile.write(content)
 
     def serve_geojson(self):
-        if not os.path.exists(GEOJSON_PATH):
-            self.send_error(404, "GeoJSON não encontrado")
-            return
-        with open(GEOJSON_PATH, 'rb') as f:
-            content = f.read()
+        global _GEOJSON_CACHE
+        if _GEOJSON_CACHE is None:
+            if not os.path.exists(GEOJSON_PATH):
+                self.send_error(404, "GeoJSON não encontrado")
+                return
+            with open(GEOJSON_PATH, 'rb') as f:
+                _GEOJSON_CACHE = f.read()
         self.send_response(200)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
-        self.send_header('Content-Length', str(len(content)))
+        self.send_header('Content-Length', str(len(_GEOJSON_CACHE)))
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
-        self.wfile.write(content)
+        self.wfile.write(_GEOJSON_CACHE)
 
-    def send_json(self, data):
+    def send_json(self, data, status=200):
         content = json.dumps(data, ensure_ascii=False).encode('utf-8')
-        self.send_response(200)
+        self.send_response(status)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.send_header('Content-Length', str(len(content)))
         self.send_header('Access-Control-Allow-Origin', '*')
@@ -298,10 +308,35 @@ class ITBIHandler(BaseHTTPRequestHandler):
             "transacoes": transacoes
         })
 
+def check_database():
+    if not os.path.exists(DB_PATH):
+        print(f"[AVISO] Banco de dados não encontrado em {DB_PATH}")
+        return False
+    size = os.path.getsize(DB_PATH)
+    if size < 10000: # Probably a Git LFS pointer file (~130 bytes)
+        print(f"[AVISO] Arquivo {DB_PATH} tem apenas {size} bytes (possível ponteiro Git LFS). Tentando 'git lfs pull'...")
+        try:
+            res = subprocess.run(["git", "lfs", "pull"], cwd=BASE_DIR, capture_output=True, text=True)
+            print(f"[Git LFS] {res.stdout} {res.stderr}")
+        except Exception as e:
+            print(f"[ERRO Git LFS] Não foi possível executar git lfs pull: {e}")
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM transacoes")
+        count = cursor.fetchone()[0]
+        conn.close()
+        print(f"[OK] Banco SQLite validado: {count:,} transações disponíveis.")
+        return True
+    except Exception as e:
+        print(f"[ERRO CRÍTICO] Falha ao abrir banco SQLite {DB_PATH}: {e}")
+        return False
+
 def run_server(port=8050):
+    check_database()
     port = int(os.environ.get('PORT', port))
     server_address = ('0.0.0.0', port)
-    httpd = HTTPServer(server_address, ITBIHandler)
+    httpd = ThreadingHTTPServer(server_address, ITBIHandler)
     print(f"Servidor ITBI Recife ativo em http://0.0.0.0:{port}")
     httpd.serve_forever()
 
