@@ -240,14 +240,14 @@ class ITBIHandler(BaseHTTPRequestHandler):
                 SELECT endereco_edificio, bairro_padronizado, total_transacoes, total_revendas, m2_privativo_medio, valor_medio_corrigido, area_privativa_media, latitude, longitude
                 FROM edifcios_resumo
                 WHERE bairro_padronizado = ? AND latitude IS NOT NULL AND longitude IS NOT NULL
-                ORDER BY total_transacoes DESC LIMIT 2000
+                ORDER BY total_transacoes DESC
             """, (bairro,))
         else:
             cursor.execute("""
                 SELECT endereco_edificio, bairro_padronizado, total_transacoes, total_revendas, m2_privativo_medio, valor_medio_corrigido, area_privativa_media, latitude, longitude
                 FROM edifcios_resumo
                 WHERE latitude IS NOT NULL AND longitude IS NOT NULL
-                ORDER BY total_transacoes DESC LIMIT 3000
+                ORDER BY total_transacoes DESC
             """)
             
         rows = [dict(r) for r in cursor.fetchall()]
