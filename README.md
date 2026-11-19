@@ -19,6 +19,26 @@ O painel estará disponível em `http://localhost:8050`.
 
 ---
 
+## Pipeline de Processamento de Dados
+
+Para reprocessar a base completa a partir dos dados oficiais e reconstruir `itbi_recife.db` (e `itbi_recife.db.gz`):
+
+```bash
+python scripts/process_itbi.py               # 1. Baixa e consolida os CSVs anuais da Prefeitura
+python scripts/corrigir_area_e_inflacao.py   # 2. Aplica correção IPCA (BCB) e estima área privativa
+python scripts/padronizar_logradouros.py     # 3. Unifica logradouros por cod_logradouro e número
+python scripts/processar_revendas.py         # 4. Identifica histórico de revendas por unidade
+python scripts/recuperar_coordenadas_itbi.py # 5. Recupera coordenadas faltantes e gera o SQLite
+```
+
+Para apenas reconstruir o banco SQLite a partir de `data/processed/itbi_consolidado_corrigido.csv`:
+
+```bash
+python scripts/criar_banco_sqlite.py
+```
+
+---
+
 ## Funcionalidades
 
 - **Visualização Geoespacial:** Mapa interativo com delimitação dos bairros (GeoJSON) e localização dos edifícios.

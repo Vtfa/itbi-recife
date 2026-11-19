@@ -1,8 +1,12 @@
+import os
 import sqlite3
 import pandas as pd
 import numpy as np
 
-conn = sqlite3.connect(r'C:\Users\PC1\Documents\ITBI_Recife\data\processed\itbi_recife.db')
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(BASE_DIR, "data", "processed", "itbi_recife.db")
+
+conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
 
 print("="*80)

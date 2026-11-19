@@ -1,5 +1,25 @@
 @echo off
-title ITBI Recife - Painel Interativo de Imóveis
+title ITBI Recife - Painel Interativo de Imoveis
 echo Iniciando Painel do ITBI Recife...
-"C:\Users\PC1\AppData\Local\Python\bin\python.exe" "C:\Users\PC1\Documents\ITBI_Recife\iniciar_dashboard.py"
+
+where python >nul 2>&1
+if %errorlevel%==0 (
+    python "%~dp0iniciar_dashboard.py"
+    goto :end
+)
+
+where py >nul 2>&1
+if %errorlevel%==0 (
+    py "%~dp0iniciar_dashboard.py"
+    goto :end
+)
+
+if exist "%LOCALAPPDATA%\Python\bin\python.exe" (
+    "%LOCALAPPDATA%\Python\bin\python.exe" "%~dp0iniciar_dashboard.py"
+    goto :end
+)
+
+echo [ERRO] Python nao encontrado no PATH nem em %%LOCALAPPDATA%%\Python\bin\python.exe.
+
+:end
 pause
