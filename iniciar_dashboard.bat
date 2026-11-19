@@ -2,15 +2,15 @@
 title ITBI Recife - Painel Interativo de Imoveis
 echo Iniciando Painel do ITBI Recife...
 
-where python >nul 2>&1
+py --version >nul 2>&1
 if %errorlevel%==0 (
-    python "%~dp0iniciar_dashboard.py"
+    py "%~dp0iniciar_dashboard.py"
     goto :end
 )
 
-where py >nul 2>&1
+python --version >nul 2>&1
 if %errorlevel%==0 (
-    py "%~dp0iniciar_dashboard.py"
+    python "%~dp0iniciar_dashboard.py"
     goto :end
 )
 
