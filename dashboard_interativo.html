@@ -188,7 +188,10 @@
                             </button>
                             <div class="min-w-0">
                                 <h2 class="text-sm md:text-base font-bold text-slate-900 truncate leading-tight" id="bldgAddress">Nome do Endereço</h2>
-                                <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200" id="bldgBairroBadge">Bairro</span>
+                                <div class="flex items-center flex-wrap gap-1 mt-0.5">
+                                    <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200" id="bldgBairroBadge">Bairro</span>
+                                    <span class="hidden inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200" id="bldgGeoBadge" title="Localização estimada por logradouro ou centroide do bairro"></span>
+                                </div>
                             </div>
                         </div>
                         <button onclick="exportTableToCSV()" class="text-xs bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold px-2.5 py-1 rounded-lg shadow-sm flex items-center space-x-1 transition shrink-0">
@@ -296,6 +299,16 @@
         let showOnlyRevendas = false;
         let currentLayout = 'split';
 
+        function escapeHtml(value) {
+            if (value === null || value === undefined) return '';
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             initMap();
             loadBairros();
@@ -398,7 +411,7 @@
                         onEachFeature: function(feature, layer) {
                             const nomeBairro = feature.properties?.EBAIRRNOMEOF || feature.properties?.EBAIRRNOME || feature.properties?.bairro || feature.properties?.nome || '';
                             if (nomeBairro) {
-                                layer.bindTooltip(`<b>${nomeBairro}</b>`, {
+                                layer.bindTooltip(`<b>${escapeHtml(nomeBairro)}</b>`, {
                                     sticky: true,
                                     direction: 'top'
                                 });
@@ -445,23 +458,6 @@
                 .catch(e => console.log('GeoJSON info:', e));
         }
 
-        let chartVisible = true;
-        function toggleChartVisibility() {
-            chartVisible = !chartVisible;
-            const canvasWrapper = document.getElementById('bldgCanvasWrapper');
-            const modeControls = document.getElementById('chartModeControls');
-            const btn = document.getElementById('btnToggleChart');
-            if (chartVisible) {
-                canvasWrapper.classList.remove('hidden');
-                modeControls.classList.remove('hidden');
-                btn.textContent = 'Ocultar';
-            } else {
-                canvasWrapper.classList.add('hidden');
-                modeControls.classList.add('hidden');
-                btn.textContent = 'Ver Gráfico';
-            }
-        }
-
         function loadBairros() {
             fetch('/api/bairros')
                 .then(r => r.json())
@@ -492,8 +488,8 @@
                         const tr = document.createElement('tr');
                         tr.className = 'hover:bg-blue-50/60 cursor-pointer transition';
                         tr.innerHTML = `
-                            <td class="py-2.5 px-4 font-bold text-slate-900">${item.endereco_edificio}</td>
-                            <td class="py-2.5 px-3 text-slate-500">${item.bairro_padronizado}</td>
+                            <td class="py-2.5 px-4 font-bold text-slate-900">${escapeHtml(item.endereco_edificio)}</td>
+                            <td class="py-2.5 px-3 text-slate-500">${escapeHtml(item.bairro_padronizado)}</td>
                             <td class="py-2.5 px-3 text-center font-bold text-blue-600">${item.total_transacoes}</td>
                             <td class="py-2.5 px-3 text-center font-bold text-purple-600">${item.total_revendas || 0}</td>
                             <td class="py-2.5 px-3 font-bold text-emerald-600">R$ ${(item.m2_privativo_medio || 0).toLocaleString('pt-BR')}</td>
@@ -527,16 +523,16 @@
 
                         tr.innerHTML = `
                             <td class="py-2.5 px-3">
-                                <div class="font-bold text-slate-900">${item.endereco_edificio}</div>
-                                <div class="text-[11px] text-purple-700 font-semibold">${item.unidade || 'Unidade'} • ${item.bairro_padronizado}</div>
+                                <div class="font-bold text-slate-900">${escapeHtml(item.endereco_edificio)}</div>
+                                <div class="text-[11px] text-purple-700 font-semibold">${escapeHtml(item.unidade || 'Unidade')} • ${escapeHtml(item.bairro_padronizado)}</div>
                             </td>
                             <td class="py-2.5 px-3">
                                 <div class="font-semibold text-slate-700">R$ ${(item.valor_real_anterior || 0).toLocaleString('pt-BR')}</div>
-                                <div class="text-[10px] text-slate-400">${dt1}</div>
+                                <div class="text-[10px] text-slate-400">${escapeHtml(dt1)}</div>
                             </td>
                             <td class="py-2.5 px-3">
                                 <div class="font-bold text-slate-900">R$ ${(item.valor_real_atual || 0).toLocaleString('pt-BR')}</div>
-                                <div class="text-[10px] text-slate-400">${dt2}</div>
+                                <div class="text-[10px] text-slate-400">${escapeHtml(dt2)}</div>
                             </td>
                             <td class="py-2.5 px-3 text-center text-slate-600 whitespace-nowrap">
                                 <span class="px-2 py-0.5 rounded bg-slate-100 font-medium">${item.anos_entre_vendas} anos</span>
@@ -565,10 +561,10 @@
                         const dataFmt = item.data_transacao ? item.data_transacao.split('-').reverse().join('/') : '-';
                         tr.innerHTML = `
                             <td class="py-2.5 px-4">
-                                <div class="font-bold text-slate-900">${item.endereco_edificio}</div>
-                                <div class="text-[11px] text-slate-500">${item.unidade || ''} • ${item.bairro_padronizado}</div>
+                                <div class="font-bold text-slate-900">${escapeHtml(item.endereco_edificio)}</div>
+                                <div class="text-[11px] text-slate-500">${escapeHtml(item.unidade || '')} • ${escapeHtml(item.bairro_padronizado)}</div>
                             </td>
-                            <td class="py-2.5 px-3 text-slate-500 whitespace-nowrap">${dataFmt}</td>
+                            <td class="py-2.5 px-3 text-slate-500 whitespace-nowrap">${escapeHtml(dataFmt)}</td>
                             <td class="py-2.5 px-3 font-bold text-slate-900">R$ ${(item.valor_avaliacao_corrigido || 0).toLocaleString('pt-BR')}</td>
                             <td class="py-2.5 px-3 font-semibold text-blue-600">${item.area_privativa_estimada || 0} m²</td>
                             <td class="py-2.5 px-3 font-bold text-emerald-600">R$ ${(item.preco_m2_privativo_corrigido || 0).toLocaleString('pt-BR')}</td>
@@ -639,18 +635,24 @@
                                 fillOpacity: 0.85
                             });
 
-                            const safeAddr = p.endereco_edificio.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                            const popupContent = `
-                                <div class="p-1">
-                                    <div class="font-bold text-slate-900 text-xs">${p.endereco_edificio}</div>
-                                    <div class="text-[11px] text-slate-600 mt-0.5">Preço Médio: <b>R$ ${p.m2_privativo_medio.toLocaleString('pt-BR')}/m²</b></div>
-                                    <div class="text-[11px] text-slate-600"><b>${p.total_transacoes} vendas</b> (${p.total_revendas || 0} revendas)</div>
-                                    <button onclick="selectBuilding('${safeAddr}')" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-1.5 px-3 rounded shadow transition">Ver Histórico</button>
-                                </div>
+                            const isApproxGeo = p.metodo_geolocalizacao && p.metodo_geolocalizacao !== 'Original da Prefeitura';
+                            const popupContainer = document.createElement('div');
+                            popupContainer.className = 'p-1';
+                            popupContainer.innerHTML = `
+                                <div class="font-bold text-slate-900 text-xs">${escapeHtml(p.endereco_edificio)}</div>
+                                <div class="text-[11px] text-slate-600 mt-0.5">Preço Médio: <b>R$ ${p.m2_privativo_medio.toLocaleString('pt-BR')}/m²</b></div>
+                                <div class="text-[11px] text-slate-600"><b>${p.total_transacoes} vendas</b> (${p.total_revendas || 0} revendas)</div>
+                                ${isApproxGeo ? `<div class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1 inline-block">Localização aproximada</div>` : ''}
                             `;
+                            const popupBtn = document.createElement('button');
+                            popupBtn.type = 'button';
+                            popupBtn.className = 'mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-1.5 px-3 rounded shadow transition';
+                            popupBtn.textContent = 'Ver Histórico';
+                            popupBtn.addEventListener('click', () => selectBuilding(p.endereco_edificio));
+                            popupContainer.appendChild(popupBtn);
 
-                            marker.bindPopup(popupContent, { closeButton: true });
-                            marker.bindTooltip(`<b>${p.endereco_edificio}</b><br>R$ ${p.m2_privativo_medio.toLocaleString('pt-BR')}/m²`, { direction: 'top' });
+                            marker.bindPopup(popupContainer, { closeButton: true });
+                            marker.bindTooltip(`<b>${escapeHtml(p.endereco_edificio)}</b><br>R$ ${p.m2_privativo_medio.toLocaleString('pt-BR')}/m²${isApproxGeo ? '<br><span style="color:#b45309">(Localização aproximada)</span>' : ''}`, { direction: 'top' });
 
                             marker.on('click', () => {
                                 selectBuilding(p.endereco_edificio);
@@ -708,9 +710,9 @@
                                     const el = document.createElement('div');
                                     el.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0 transition';
                                     el.innerHTML = `
-                                        <div class="font-bold text-slate-800 text-sm">${item.endereco_edificio}</div>
+                                        <div class="font-bold text-slate-800 text-sm">${escapeHtml(item.endereco_edificio)}</div>
                                         <div class="text-xs text-slate-500 mt-0.5 flex items-center justify-between">
-                                            <span>${item.bairro_padronizado} • ${item.total_transacoes} vendas (${item.total_revendas || 0} re-vendas)</span>
+                                            <span>${escapeHtml(item.bairro_padronizado)} • ${item.total_transacoes} vendas (${item.total_revendas || 0} re-vendas)</span>
                                             <span class="font-bold text-blue-600">R$ ${item.m2_privativo_medio.toLocaleString('pt-BR')}/m²</span>
                                         </div>
                                     `;
@@ -786,6 +788,15 @@
 
                     document.getElementById('bldgAddress').textContent = endereco;
                     document.getElementById('bldgBairroBadge').textContent = resumo.bairro_padronizado || 'Recife';
+                    const geoBadge = document.getElementById('bldgGeoBadge');
+                    if (geoBadge) {
+                        if (resumo.metodo_geolocalizacao && resumo.metodo_geolocalizacao !== 'Original da Prefeitura') {
+                            geoBadge.textContent = `Geo: ${resumo.metodo_geolocalizacao}`;
+                            geoBadge.classList.remove('hidden');
+                        } else {
+                            geoBadge.classList.add('hidden');
+                        }
+                    }
                     document.getElementById('bldgM2Medio').textContent = `R$ ${(resumo.m2_privativo_medio || 0).toLocaleString('pt-BR')}`;
                     document.getElementById('bldgValorMedio').textContent = `R$ ${(resumo.valor_medio_corrigido || 0).toLocaleString('pt-BR')}`;
                     document.getElementById('bldgAreaMedia').textContent = `${resumo.area_privativa_media || 0} m²`;
@@ -817,7 +828,7 @@
                     tr.classList.add('revenda-border', 'bg-purple-50/20');
                 }
                 
-                const padraoBadge = t.padrao_acabamento ? `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700">${t.padrao_acabamento}</span>` : '-';
+                const padraoBadge = t.padrao_acabamento ? `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700">${escapeHtml(t.padrao_acabamento)}</span>` : '-';
                 const dataFmt = t.data_transacao ? t.data_transacao.split('-').reverse().join('/') : '-';
 
                 // Repeated Sales Badge & Metric
@@ -834,18 +845,18 @@
                         
                         revendaBadge = `
                             <div>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${cor}" title="Venda anterior em ${dtAnt} por R$ ${(t.valor_real_anterior || 0).toLocaleString('pt-BR')}">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${cor}" title="Venda anterior em ${escapeHtml(dtAnt)} por R$ ${(t.valor_real_anterior || 0).toLocaleString('pt-BR')}">
                                     <i class="fa-solid fa-rotate mr-1"></i> ${t.ordem_venda}ª Venda (${sinal}${varPct}% real)
                                 </span>
-                                <div class="text-[10px] text-slate-500 mt-0.5">vs. ${dtAnt}</div>
+                                <div class="text-[10px] text-slate-500 mt-0.5">vs. ${escapeHtml(dtAnt)}</div>
                             </div>
                         `;
                     }
                 }
 
                 tr.innerHTML = `
-                    <td class="py-2.5 px-3 font-bold text-slate-900">${t.unidade || 'Unidade'}</td>
-                    <td class="py-2.5 px-3 text-slate-500 whitespace-nowrap">${dataFmt}</td>
+                    <td class="py-2.5 px-3 font-bold text-slate-900">${escapeHtml(t.unidade || 'Unidade')}</td>
+                    <td class="py-2.5 px-3 text-slate-500 whitespace-nowrap">${escapeHtml(dataFmt)}</td>
                     <td class="py-2.5 px-3">${revendaBadge}</td>
                     <td class="py-2.5 px-3">
                         <div class="font-bold text-slate-900">R$ ${(t.valor_avaliacao_corrigido || 0).toLocaleString('pt-BR')}</div>
@@ -1063,31 +1074,38 @@
             }
         }
 
+        function csvCell(val) {
+            const s = String(val === null || val === undefined ? '' : val).replace(/"/g, '""');
+            return `"${s}"`;
+        }
+
         function exportTableToCSV() {
             if (!currentTransactionsData || currentTransactionsData.length === 0) return;
             const headers = ["Unidade", "Data Transacao", "Ordem Venda", "Valor Corrigido IPCA", "Valor Nominal", "Area Privativa Estimada", "Preco m2 Privativo Corrigido", "Data Venda Anterior", "Valor Real Anterior", "Variacao Real Pct", "Padrao Acabamento"];
             const rows = currentTransactionsData.map(t => [
-                `"${t.unidade || ''}"`,
-                `"${t.data_transacao || ''}"`,
+                csvCell(t.unidade || ''),
+                csvCell(t.data_transacao || ''),
                 t.ordem_venda || 1,
                 t.valor_avaliacao_corrigido || 0,
                 t.valor_nominal || 0,
                 t.area_privativa_estimada || 0,
                 t.preco_m2_privativo_corrigido || 0,
-                `"${t.data_venda_anterior || ''}"`,
+                csvCell(t.data_venda_anterior || ''),
                 t.valor_real_anterior || 0,
                 t.var_real_pct || 0,
-                `"${t.padrao_acabamento || ''}"`
+                csvCell(t.padrao_acabamento || '')
             ]);
 
-            const csvContent = "data:text/csv;charset=utf-8-sig," + [headers.join(';'), ...rows.map(e => e.join(';'))].join('\n');
-            const encodedUri = encodeURI(csvContent);
+            const csvText = [headers.join(';'), ...rows.map(e => e.join(';'))].join('\n');
+            const blob = new Blob(["\uFEFF" + csvText], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
+            link.setAttribute("href", url);
             link.setAttribute("download", `transacoes_${currentBuildingAddress.replace(/[^a-zA-Z0-9]/g, '_')}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>
