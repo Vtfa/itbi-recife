@@ -1,4 +1,5 @@
 import os
+import gzip
 import json
 import sqlite3
 import urllib.parse
@@ -13,6 +14,7 @@ GEOJSON_PATH = os.path.join(BASE_DIR, "data", "raw", "bairros_recife.geojson")
 HTML_INDEX = os.path.join(BASE_DIR, "dashboard_interativo.html")
 
 _GEOJSON_CACHE = None
+_GEOJSON_GZ_CACHE = None
 
 class ITBIHandler(BaseHTTPRequestHandler):
     def get_db(self):
@@ -58,29 +60,44 @@ class ITBIHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
+    def _accepts_gzip(self):
+        return 'gzip' in (self.headers.get('Accept-Encoding') or '').lower()
+
     def serve_geojson(self):
-        global _GEOJSON_CACHE
+        global _GEOJSON_CACHE, _GEOJSON_GZ_CACHE
         if _GEOJSON_CACHE is None:
             if not os.path.exists(GEOJSON_PATH):
                 self.send_error(404, "GeoJSON não encontrado")
                 return
             with open(GEOJSON_PATH, 'rb') as f:
                 _GEOJSON_CACHE = f.read()
+            _GEOJSON_GZ_CACHE = gzip.compress(_GEOJSON_CACHE, compresslevel=5)
+
+        use_gzip = self._accepts_gzip()
+        payload = _GEOJSON_GZ_CACHE if use_gzip else _GEOJSON_CACHE
         self.send_response(200)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
-        self.send_header('Content-Length', str(len(_GEOJSON_CACHE)))
+        if use_gzip:
+            self.send_header('Content-Encoding', 'gzip')
+            self.send_header('Vary', 'Accept-Encoding')
+        self.send_header('Content-Length', str(len(payload)))
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
-        self.wfile.write(_GEOJSON_CACHE)
+        self.wfile.write(payload)
 
     def send_json(self, data, status=200):
         content = json.dumps(data, ensure_ascii=False).encode('utf-8')
+        use_gzip = self._accepts_gzip() and len(content) > 1024
+        payload = gzip.compress(content, compresslevel=5) if use_gzip else content
         self.send_response(status)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
-        self.send_header('Content-Length', str(len(content)))
+        if use_gzip:
+            self.send_header('Content-Encoding', 'gzip')
+            self.send_header('Vary', 'Accept-Encoding')
+        self.send_header('Content-Length', str(len(payload)))
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
-        self.wfile.write(content)
+        self.wfile.write(payload)
 
     def handle_bairros(self):
         conn = self.get_db()
@@ -174,7 +191,11 @@ class ITBIHandler(BaseHTTPRequestHandler):
                 area_privativa_estimada,
                 ordem_venda
             FROM transacoes
-            WHERE ordem_venda >= 2 AND anos_entre_vendas >= 0.8
+            WHERE eh_revenda = 1
+              AND ordem_venda >= 2
+              AND anos_entre_vendas >= 0.8
+              AND valor_real_anterior >= 15000
+              AND ABS(var_real_pct) <= 500
         """
         params_rev = []
         if bairro:
@@ -237,14 +258,14 @@ class ITBIHandler(BaseHTTPRequestHandler):
         
         if bairro:
             cursor.execute("""
-                SELECT endereco_edificio, bairro_padronizado, total_transacoes, total_revendas, m2_privativo_medio, valor_medio_corrigido, area_privativa_media, latitude, longitude
+                SELECT endereco_edificio, bairro_padronizado, total_transacoes, total_revendas, m2_privativo_medio, valor_medio_corrigido, area_privativa_media, latitude, longitude, metodo_geolocalizacao
                 FROM edifcios_resumo
                 WHERE bairro_padronizado = ? AND latitude IS NOT NULL AND longitude IS NOT NULL
                 ORDER BY total_transacoes DESC
             """, (bairro,))
         else:
             cursor.execute("""
-                SELECT endereco_edificio, bairro_padronizado, total_transacoes, total_revendas, m2_privativo_medio, valor_medio_corrigido, area_privativa_media, latitude, longitude
+                SELECT endereco_edificio, bairro_padronizado, total_transacoes, total_revendas, m2_privativo_medio, valor_medio_corrigido, area_privativa_media, latitude, longitude, metodo_geolocalizacao
                 FROM edifcios_resumo
                 WHERE latitude IS NOT NULL AND longitude IS NOT NULL
                 ORDER BY total_transacoes DESC
@@ -294,7 +315,8 @@ class ITBIHandler(BaseHTTPRequestHandler):
                 var_real_pct,
                 var_nom_pct,
                 anos_entre_vendas,
-                taxa_anual_real_pct
+                taxa_anual_real_pct,
+                metodo_geolocalizacao
             FROM transacoes
             WHERE endereco_edificio = ?
             ORDER BY complemento_fmt ASC, data_transacao DESC
