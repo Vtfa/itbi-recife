@@ -80,7 +80,17 @@ def main():
     fator_map = get_ipca_series()
     
     print(f"Carregando {INPUT_CONSOLIDATED}...")
-    df = pd.read_csv(INPUT_CONSOLIDATED, sep=';', encoding='utf-8-sig', low_memory=False)
+    df = pd.read_csv(
+        INPUT_CONSOLIDATED,
+        sep=';',
+        encoding='utf-8-sig',
+        low_memory=False,
+        dtype={'numero': str, 'complemento': str}
+    )
+    
+    # Preservar coordenadas originais da Prefeitura para tornar a recuperação espacial idempotente
+    df['latitude_original'] = pd.to_numeric(df['latitude'], errors='coerce')
+    df['longitude_original'] = pd.to_numeric(df['longitude'], errors='coerce')
     
     df['valor_num'] = df['valor_avaliacao'].apply(clean_val)
     df['area_total_cadastral'] = df['area_construida'].apply(clean_val)

@@ -3,6 +3,11 @@ import json
 import pandas as pd
 import numpy as np
 
+try:
+    from scripts.criar_banco_sqlite import format_numero, read_consolidated_csv
+except ImportError:
+    from criar_banco_sqlite import format_numero, read_consolidated_csv
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSV_INPUT = os.path.join(BASE_DIR, "data", "processed", "itbi_consolidado_corrigido.csv")
 OUTPUT_ENDERECOS = os.path.join(BASE_DIR, "data", "processed", "imoveis_por_endereco_detalhado.csv")
@@ -11,15 +16,21 @@ OUTPUT_HTML_MAPA = os.path.join(BASE_DIR, "mapa_imoveis_recife.html")
 
 def main():
     print(f"Lendo base corrigida ({CSV_INPUT})...")
-    df = pd.read_csv(CSV_INPUT, sep=';', encoding='utf-8-sig', low_memory=False)
+    df = read_consolidated_csv(CSV_INPUT)
     
     # Formatar endereço completo padronizado
-    df['logradouro_fmt'] = df['logradouro'].fillna('').astype(str).str.strip().str.title()
-    df['numero_fmt'] = df['numero'].fillna('').astype(str).str.replace('.0', '', regex=False).str.strip()
+    df['logradouro_fmt'] = (
+        df['logradouro_canonico']
+        if 'logradouro_canonico' in df.columns
+        else df['logradouro'].fillna('').astype(str).str.strip().str.title()
+    )
+    df['numero_fmt'] = format_numero(df['numero_fmt'] if 'numero_fmt' in df.columns else df['numero'])
     df['complemento_fmt'] = df['complemento'].fillna('').astype(str).str.strip().str.title()
     
     df['endereco_edificio'] = df['logradouro_fmt'] + ', ' + df['numero_fmt'] + ' - ' + df['bairro_padronizado']
-    df['endereco_completo'] = df['logradouro_fmt'] + ', ' + df['numero_fmt'] + ' ' + df['complemento_fmt'] + ' - ' + df['bairro_padronizado']
+    df['endereco_completo'] = (
+        df['logradouro_fmt'] + ', ' + df['numero_fmt'] + ' ' + df['complemento_fmt'] + ' - ' + df['bairro_padronizado']
+    ).str.replace(r'\s+', ' ', regex=True).str.strip()
     
     # Salvar base detalhada por imóvel individual
     colunas_detalhe = [
