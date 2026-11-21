@@ -1,4 +1,5 @@
 import os
+import time
 import gzip
 import shutil
 import sqlite3
@@ -47,6 +48,22 @@ def read_consolidated_csv(csv_path=CSV_INPUT):
         low_memory=False,
         dtype=dtype_map,
     )
+
+
+def safe_to_csv(df, csv_path, **kwargs):
+    """Salva DataFrame em CSV usando arquivo temporário + os.replace para evitar Errno 22 no Windows."""
+    params = {"index": False, "sep": ";", "encoding": "utf-8-sig"}
+    params.update(kwargs)
+    tmp_path = f"{csv_path}.{os.getpid()}.tmp"
+    df.to_csv(tmp_path, **params)
+    for attempt in range(5):
+        try:
+            os.replace(tmp_path, csv_path)
+            return
+        except OSError:
+            if attempt == 4:
+                raise
+            time.sleep(0.4 * (attempt + 1))
 
 
 def build_sqlite_db(df=None, compress_gz=True):

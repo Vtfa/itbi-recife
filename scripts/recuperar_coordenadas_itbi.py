@@ -3,9 +3,9 @@ import pandas as pd
 import numpy as np
 
 try:
-    from scripts.criar_banco_sqlite import build_sqlite_db, read_consolidated_csv
+    from scripts.criar_banco_sqlite import build_sqlite_db, read_consolidated_csv, safe_to_csv
 except ImportError:
-    from criar_banco_sqlite import build_sqlite_db, read_consolidated_csv
+    from criar_banco_sqlite import build_sqlite_db, read_consolidated_csv, safe_to_csv
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSV_INPUT = os.path.join(BASE_DIR, "data", "processed", "itbi_consolidado_corrigido.csv")
@@ -17,9 +17,10 @@ ESTELITA_LAT = -8.072834
 ESTELITA_LNG = -34.887812
 
 
-def main():
+def main(df=None):
     print("Iniciando recuperação de coordenadas geográficas dos imóveis...")
-    df = read_consolidated_csv(CSV_INPUT)
+    if df is None:
+        df = read_consolidated_csv(CSV_INPUT)
 
     # Usar coordenadas originais preservadas para garantir idempotência em reexecuções
     if "latitude_original" in df.columns and "longitude_original" in df.columns:
@@ -91,7 +92,7 @@ def main():
     )
 
     # Salvar dataset corrigido
-    df.to_csv(CSV_INPUT, index=False, sep=";", encoding="utf-8-sig")
+    safe_to_csv(df, CSV_INPUT)
     print("CSV consolidado atualizado com 100% de coordenadas preenchidas.")
 
     # Gerar relatório dos imóveis recuperados agrupados por edifício
@@ -116,7 +117,7 @@ def main():
     relatorio_predios = relatorio_predios.sort_values(
         by=["bairro_padronizado", "total_transacoes"], ascending=[True, False]
     ).reset_index(drop=True)
-    relatorio_predios.to_csv(RELATORIO_CSV, index=False, sep=";", encoding="utf-8-sig")
+    safe_to_csv(relatorio_predios, RELATORIO_CSV)
     print(f"Relatório de edifícios recuperados salvo em: {RELATORIO_CSV}")
 
     # Atualizar o banco SQLite via construtor unificado
@@ -138,6 +139,7 @@ def main():
     print("TOP 25 BAIRROS COM MAIS IMÓVEIS/TRANSAÇÕES RECUPERADAS:")
     print("=" * 80)
     print(resumo_bairro.head(25).to_string(index=False))
+    return df
 
 
 if __name__ == "__main__":

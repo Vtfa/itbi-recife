@@ -21,7 +21,16 @@ O painel estará disponível em `http://localhost:8050`.
 
 ## Pipeline de Processamento de Dados
 
-Para reprocessar a base completa a partir dos dados oficiais e reconstruir `itbi_recife.db` (e `itbi_recife.db.gz`):
+Para baixar as vendas mais recentes do Portal de Dados Abertos da Prefeitura do Recife, atualizar a correção pelo IPCA (Banco Central) e reconstruir `itbi_recife.db` (e `itbi_recife.db.gz`) em um único comando:
+
+```bash
+python scripts/atualizar_dados.py
+```
+
+Ou no Windows:
+- Executar `atualizar_dados.bat` (use `--all` para forçar o re-download de todos os anos históricos desde 2015).
+
+Caso deseje executar as etapas individualmente:
 
 ```bash
 python scripts/process_itbi.py               # 1. Baixa e consolida os CSVs anuais da Prefeitura

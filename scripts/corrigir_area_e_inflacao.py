@@ -5,6 +5,11 @@ import unicodedata
 import pandas as pd
 import numpy as np
 
+try:
+    from scripts.criar_banco_sqlite import safe_to_csv
+except ImportError:
+    from criar_banco_sqlite import safe_to_csv
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INPUT_CONSOLIDATED = os.path.join(BASE_DIR, "data", "processed", "itbi_consolidado.csv")
 OUTPUT_CONSOLIDATED = os.path.join(BASE_DIR, "data", "processed", "itbi_consolidado_corrigido.csv")
@@ -76,7 +81,7 @@ def calc_fator_privativo(tipo, padrao):
     else:
         return 0.75
 
-def main():
+def main(save_csv=True):
     fator_map = get_ipca_series()
     
     print(f"Carregando {INPUT_CONSOLIDATED}...")
@@ -111,8 +116,9 @@ def main():
     df['preco_m2_privativo_nominal'] = (df['valor_num'] / df['area_privativa_estimada']).round(2)
     df['preco_m2_privativo_corrigido'] = (df['valor_avaliacao_corrigido'] / df['area_privativa_estimada']).round(2)
     
-    print(f"Salvando dataset consolidado com todas as correções em {OUTPUT_CONSOLIDATED}...")
-    df.to_csv(OUTPUT_CONSOLIDATED, index=False, sep=';', encoding='utf-8-sig')
+    if save_csv:
+        print(f"Salvando dataset consolidado com todas as correções em {OUTPUT_CONSOLIDATED}...")
+        safe_to_csv(df, OUTPUT_CONSOLIDATED)
     
     # Filtro de registros válidos para estatísticas (removendo 1% e 99% de outliers)
     valid = df[(df['area_privativa_estimada'] >= 10) & (df['valor_avaliacao_corrigido'] >= 10000)].copy()
@@ -155,7 +161,7 @@ def main():
     for c in ['m2_privativo_medio', 'm2_privativo_mediana', 'm2_total_medio_corrigido', 'indice_normalizado_0_100', 'z_score', 'area_privativa_media', 'valor_medio_corrigido']:
         bairro_stats[c] = bairro_stats[c].round(2)
         
-    bairro_stats.to_csv(OUTPUT_BAIRRO_PRIVATIVO, index=False, sep=';', encoding='utf-8-sig')
+    safe_to_csv(bairro_stats, OUTPUT_BAIRRO_PRIVATIVO)
     print(f"Tabela por bairro salva em: {OUTPUT_BAIRRO_PRIVATIVO}")
     
     # Série anual por bairro
@@ -167,8 +173,9 @@ def main():
     
     anual_stats['m2_privativo_medio'] = anual_stats['m2_privativo_medio'].round(2)
     anual_stats['m2_privativo_mediana'] = anual_stats['m2_privativo_mediana'].round(2)
-    anual_stats.to_csv(OUTPUT_ANUAL_PRIVATIVO, index=False, sep=';', encoding='utf-8-sig')
+    safe_to_csv(anual_stats, OUTPUT_ANUAL_PRIVATIVO)
     print(f"Série anual salva em: {OUTPUT_ANUAL_PRIVATIVO}")
+    return df
 
 if __name__ == "__main__":
     main()

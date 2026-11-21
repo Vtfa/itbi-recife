@@ -1,8 +1,15 @@
 import os
 import re
+import sys
 import json
 import urllib.request
+from datetime import datetime, timezone
 import pandas as pd
+
+try:
+    from scripts.criar_banco_sqlite import safe_to_csv
+except ImportError:
+    from criar_banco_sqlite import safe_to_csv
 
 API_URL = "https://dados.recife.pe.gov.br/api/3/action/package_show?id=imposto-sobre-transmissao-de-bens-imoveis-itbi"
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -54,15 +61,50 @@ def extract_year(name, url):
         return match.group(0)
     return "desconhecido"
 
-def main():
+def should_download(file_path, resource, year, max_year, force_all=False):
+    if force_all or not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
+        return True, "arquivo local ausente ou atualização completa forçada"
+
+    # Sempre verificar atualização para o ano mais recente
+    if year == max_year:
+        remote_mod = resource.get('last_modified') or resource.get('created')
+        if remote_mod:
+            try:
+                remote_dt = datetime.fromisoformat(remote_mod.replace('Z', '+00:00')).replace(tzinfo=None)
+                local_dt = datetime.fromtimestamp(os.path.getmtime(file_path), tz=timezone.utc).replace(tzinfo=None)
+                if remote_dt > local_dt:
+                    return True, f"atualizado no portal em {remote_mod[:10]}"
+                return True, f"ano corrente ({year}) - baixando versão mais recente"
+            except Exception:
+                pass
+        return True, f"ano corrente ({year})"
+
+    # Para anos anteriores, baixar apenas se last_modified remoto for mais novo que o arquivo local
+    remote_mod = resource.get('last_modified')
+    if remote_mod:
+        try:
+            remote_dt = datetime.fromisoformat(remote_mod.replace('Z', '+00:00')).replace(tzinfo=None)
+            local_dt = datetime.fromtimestamp(os.path.getmtime(file_path), tz=timezone.utc).replace(tzinfo=None)
+            if remote_dt > local_dt:
+                return True, f"atualizado no portal em {remote_mod[:10]}"
+        except Exception:
+            pass
+
+    return False, "cache local atualizado"
+
+
+def main(force_all=False):
     resources = get_resources()
-    print(f"\nForam encontrados {len(resources)} arquivos CSV de ITBI.")
+    print(f"\nForam encontrados {len(resources)} arquivos CSV de ITBI no portal da Prefeitura.")
     
     sorted_resources = []
     for r in resources:
         year = extract_year(r.get('name', ''), r.get('url', ''))
         sorted_resources.append((year, r))
     sorted_resources.sort(key=lambda x: x[0])
+
+    numeric_years = [y for y, _ in sorted_resources if y.isdigit()]
+    max_year = max(numeric_years) if numeric_years else ""
     
     dfs = []
     summary = []
@@ -72,7 +114,12 @@ def main():
         file_path = os.path.join(RAW_DIR, file_name)
         
         url = r.get('url')
-        download_file(url, file_path)
+        need_dl, reason = should_download(file_path, r, year, max_year, force_all=force_all)
+        if need_dl:
+            print(f"[{year}] Baixando ({reason})...")
+            download_file(url, file_path)
+        else:
+            print(f"[{year}] Usando arquivo local {file_name} ({reason}).")
         
         enc, sep = detect_csv_format(file_path)
         print(f"Lendo {file_name} (Encoding: {enc}, Separador: '{sep}')...")
@@ -103,8 +150,9 @@ def main():
     print(f"Total consolidado: {len(combined_df):,} registros e {len(combined_df.columns)} colunas.")
     print(f"Salvando em: {CONSOLIDATED_CSV}...")
     
-    combined_df.to_csv(CONSOLIDATED_CSV, index=False, sep=';', encoding='utf-8-sig')
+    safe_to_csv(combined_df, CONSOLIDATED_CSV)
     print("Dataset consolidado salvo com sucesso!")
 
 if __name__ == "__main__":
-    main()
+    force = "--all" in sys.argv or "--force" in sys.argv
+    main(force_all=force)

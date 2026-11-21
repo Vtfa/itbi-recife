@@ -2,9 +2,9 @@ import os
 import pandas as pd
 
 try:
-    from scripts.criar_banco_sqlite import read_consolidated_csv
+    from scripts.criar_banco_sqlite import read_consolidated_csv, safe_to_csv
 except ImportError:
-    from criar_banco_sqlite import read_consolidated_csv
+    from criar_banco_sqlite import read_consolidated_csv, safe_to_csv
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSV_CONSOLIDADO = os.path.join(BASE_DIR, "data", "processed", "itbi_consolidado_corrigido.csv")
@@ -12,8 +12,9 @@ RELATORIO_CSV = os.path.join(BASE_DIR, "data", "processed", "imoveis_recuperados
 RELATORIO_BAIRRO_CSV = os.path.join(BASE_DIR, "data", "processed", "resumo_imoveis_recuperados_por_bairro.csv")
 
 
-def main():
-    df_cons = read_consolidated_csv(CSV_CONSOLIDADO)
+def main(df_cons=None):
+    if df_cons is None:
+        df_cons = read_consolidated_csv(CSV_CONSOLIDADO)
     print(f"Total de registros no consolidado: {len(df_cons):,}")
 
     if "metodo_geolocalizacao" in df_cons.columns:
@@ -49,7 +50,7 @@ def main():
     relatorio_edificios = relatorio_edificios.sort_values(
         by=["bairro_padronizado", "total_transacoes"], ascending=[True, False]
     ).reset_index(drop=True)
-    relatorio_edificios.to_csv(RELATORIO_CSV, index=False, sep=";", encoding="utf-8-sig")
+    safe_to_csv(relatorio_edificios, RELATORIO_CSV)
     print(f"Relatório detalhado de {len(relatorio_edificios):,} edifícios recuperados salvo em: {RELATORIO_CSV}")
 
     # Resumo agregado por bairro
@@ -80,7 +81,7 @@ def main():
             "valor_medio_imovel",
         ]
     ]
-    resumo_bairro.to_csv(RELATORIO_BAIRRO_CSV, index=False, sep=";", encoding="utf-8-sig")
+    safe_to_csv(resumo_bairro, RELATORIO_BAIRRO_CSV)
     print(f"Resumo por bairro salvo em: {RELATORIO_BAIRRO_CSV}")
 
     print("\n" + "=" * 95)

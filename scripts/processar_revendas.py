@@ -7,12 +7,14 @@ try:
         build_sqlite_db,
         format_numero,
         read_consolidated_csv,
+        safe_to_csv,
     )
 except ImportError:
     from criar_banco_sqlite import (
         build_sqlite_db,
         format_numero,
         read_consolidated_csv,
+        safe_to_csv,
     )
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,9 +23,10 @@ CSV_INPUT = os.path.join(BASE_DIR, "data", "processed", "itbi_consolidado_corrig
 SINGLE_UNIT_TYPES = {"Casa", "Galpão", "Mocambo", "Loja"}
 
 
-def main():
-    print(f"Lendo {CSV_INPUT} para calcular métricas de vendas repetidas...")
-    df = read_consolidated_csv(CSV_INPUT)
+def main(df=None, save_csv=True, build_db=True):
+    if df is None:
+        print(f"Lendo {CSV_INPUT} para calcular métricas de vendas repetidas...")
+        df = read_consolidated_csv(CSV_INPUT)
 
     # Normalizar número e complemento antes de ordenar e agrupar
     df["numero_fmt"] = format_numero(df["numero_fmt"] if "numero_fmt" in df.columns else df["numero"])
@@ -136,12 +139,15 @@ def main():
     print(f"Total de imóveis únicos com mais de 1 venda: {df[df['eh_revenda']]['chave_imovel'].nunique():,}")
     print(f"Total de registros em histórico de revenda: {df['eh_revenda'].sum():,}")
 
-    # Salvar no CSV consolidado
-    df.to_csv(CSV_INPUT, index=False, sep=";", encoding="utf-8-sig")
-    print(f"Arquivo CSV atualizado em {CSV_INPUT}")
+    if save_csv:
+        # Salvar no CSV consolidado
+        safe_to_csv(df, CSV_INPUT)
+        print(f"Arquivo CSV atualizado em {CSV_INPUT}")
 
-    # Atualizar banco de dados SQLite usando o construtor unificado
-    build_sqlite_db(df)
+    if build_db:
+        # Atualizar banco de dados SQLite usando o construtor unificado
+        build_sqlite_db(df)
+    return df
 
 
 if __name__ == "__main__":

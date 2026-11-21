@@ -9,6 +9,7 @@ try:
         build_sqlite_db,
         format_numero,
         read_consolidated_csv,
+        safe_to_csv,
     )
 except ImportError:
     from criar_banco_sqlite import (
@@ -16,6 +17,7 @@ except ImportError:
         build_sqlite_db,
         format_numero,
         read_consolidated_csv,
+        safe_to_csv,
     )
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -101,9 +103,10 @@ def build_canonical_street_map(df):
         
     return canonical_map
 
-def main():
-    print(f"Lendo base consolidada ({CSV_INPUT})...")
-    df = read_consolidated_csv(CSV_INPUT)
+def main(df=None, save_csv=True, build_db=True):
+    if df is None:
+        print(f"Lendo base consolidada ({CSV_INPUT})...")
+        df = read_consolidated_csv(CSV_INPUT)
     
     canonical_map = build_canonical_street_map(df)
     
@@ -118,30 +121,33 @@ def main():
         df['logradouro_canonico'] + ', ' + df['numero_fmt'] + ' ' + df['complemento_fmt'] + ' - ' + df['bairro_padronizado']
     ).str.replace(r'\s+', ' ', regex=True).str.strip()
     
-    # Salvar no CSV consolidado
-    df.to_csv(CSV_INPUT, index=False, sep=';', encoding='utf-8-sig')
-    print("Dataset consolidado atualizado com logradouros canônicos.")
+    if save_csv:
+        # Salvar no CSV consolidado
+        safe_to_csv(df, CSV_INPUT)
+        print("Dataset consolidado atualizado com logradouros canônicos.")
     
-    # Atualizar banco de dados SQLite usando o construtor unificado
-    build_sqlite_db(df)
-    
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    # Testar caso específico de General Polidoro, 320
-    print("\n" + "="*80)
-    print("VERIFICAÇÃO: RUA GENERAL POLIDORO, 320 - VÁRZEA")
-    print("="*80)
-    cursor.execute("""
-        SELECT endereco_edificio, total_transacoes, m2_privativo_medio, valor_medio_corrigido, latitude, longitude
-        FROM edifcios_resumo
-        WHERE endereco_edificio LIKE '%Polidoro, 320%'
-    """)
-    for row in cursor.fetchall():
-        print(row)
+    if build_db:
+        # Atualizar banco de dados SQLite usando o construtor unificado
+        build_sqlite_db(df)
         
-    conn.close()
-    print("\nBanco de dados reconstruído e unificado com sucesso!")
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # Testar caso específico de General Polidoro, 320
+        print("\n" + "="*80)
+        print("VERIFICAÇÃO: RUA GENERAL POLIDORO, 320 - VÁRZEA")
+        print("="*80)
+        cursor.execute("""
+            SELECT endereco_edificio, total_transacoes, m2_privativo_medio, valor_medio_corrigido, latitude, longitude
+            FROM edifcios_resumo
+            WHERE endereco_edificio LIKE '%Polidoro, 320%'
+        """)
+        for row in cursor.fetchall():
+            print(row)
+            
+        conn.close()
+        print("\nBanco de dados reconstruído e unificado com sucesso!")
+    return df
 
 if __name__ == "__main__":
     main()
